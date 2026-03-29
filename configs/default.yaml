@@ -1,0 +1,29 @@
+# default hyperparameters
+# loaded by app/ui.py and evaluation scripts
+# all values can be overridden via Streamlit sidebar sliders
+
+extractor: SIFT
+model: Affine
+
+sift:
+  n_features: 0         # 0 = unlimited
+  ratio: 0.75
+
+orb:
+  n_features: 500
+  ratio: 0.75
+
+surf:
+  hessian_threshold: 400
+  ratio: 0.75
+
+ransac:
+  epsilon: 3.0
+  confidence: 0.99
+  max_iterations: 2000
+
+evaluation:
+  n_frames: 100
+  scale_range: [0.4, 0.8]
+  rotation_range: [-30, 30]
+  shear_range: [-0.1, 0.1]
