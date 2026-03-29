@@ -71,6 +71,6 @@ class RANSAC:
         # TODO: implement
         ...
 
-    def _adaptive_iters(self, n_inliers: int, n_total: int) -> int:
+    def __adaptive_iters(self, n_inliers: int, n_total: int) -> int:
         # TODO: implement
         ...
