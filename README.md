@@ -45,7 +45,7 @@ app/
 
 | File(s)                              | Owner    |
 |--------------------------------------|----------|
-| `evaluation/`, `ransac` | Person A |
-| `features/`, `georeferencing` | Person B |
-| `transforms/`, `pipeline` | Person C |
+| `evaluation/`, `ransac` | Solomiia |
+| `features/`, `georeferencing` | Marta |
+| `transforms/`, `pipeline` | Bohdan |
 
