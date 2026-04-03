@@ -64,7 +64,8 @@
 # =============================================================================
 
 from __future__ import annotations
-
+from random import seed
+import cv2
 import numpy as np
 from numpy.typing import NDArray
 
@@ -73,18 +74,76 @@ from evaluation.base import DatasetGenerator, SyntheticFrame
 
 class SyntheticDatasetGenerator(DatasetGenerator):
     def __init__(self, map_img: NDArray, seed: int = 42) -> None:
-        # TODO: implement
-        ...
+        self.map_img = map_img
+        self.rng = np.random.default_rng(seed)
+        
 
     def generate(self, n: int, **kwargs) -> list[SyntheticFrame]:
-        # TODO: implement
-        ...
+        frames: list[SyntheticFrame] = []
+        H, W = self.map_img.shape[:2]
+        for _ in range(n):
+            scale_range = kwargs.get("scale_range", (0.4, 0.8))
+            rotation_range = kwargs.get("rotation_range", (-30, 30))
+            shear_range = kwargs.get("shear_range", (-0.1, 0.1))
+            M, ground_truth_px = self._random_affine(
+                scale_range,
+                rotation_range,
+                shear_range,
+            )
+            warped = cv2.warpAffine(self.map_img, M[:2], (W, H))
+            frame = SyntheticFrame(
+                uav_img=warped,
+                ground_truth_px=ground_truth_px,
+                transform_matrix=M,
+            )
+            frames.append(frame)
 
-    def __random_affine(
+        return frames
+
+
+    def _random_affine(
         self,
         scale_range: tuple,
         rotation_range: tuple,
         shear_range: tuple,
     ) -> tuple[NDArray, NDArray]:
-        # TODO: implement — this is the LA core of Person C's work
-        ...
+        H, W = self.map_img.shape[:2]
+
+        s = self.rng.uniform(*scale_range)
+        theta = np.radians(self.rng.uniform(*rotation_range))
+        shx = self.rng.uniform(*shear_range)
+
+        tx = self.rng.uniform(-0.2 * W, 0.2 * W)
+        ty = self.rng.uniform(-0.2 * H, 0.2 * H)
+
+        S = np.array([
+            [s, 0.0, 0.0],
+            [0.0, s, 0.0],
+            [0.0, 0.0, 1.0],
+        ], dtype=np.float64)
+
+        R = np.array([
+            [np.cos(theta), -np.sin(theta), 0.0],
+            [np.sin(theta),  np.cos(theta), 0.0],
+            [0.0, 0.0, 1.0],
+        ], dtype=np.float64)
+
+        Sh = np.array([
+            [1.0, shx, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ], dtype=np.float64)
+
+        T = np.array([
+            [1.0, 0.0, tx],
+            [0.0, 1.0, ty],
+            [0.0, 0.0, 1.0],
+        ], dtype=np.float64)
+
+        M = T @ R @ Sh @ S
+
+        center_h = np.array([W / 2.0, H / 2.0, 1.0], dtype=np.float64)
+        ground_truth_h = M @ center_h
+        ground_truth_px = ground_truth_h[:2]
+
+        return M, ground_truth_px
