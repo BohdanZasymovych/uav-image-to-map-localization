@@ -49,3 +49,19 @@ app/
 | `features/`, `georeferencing` | Marta |
 | `transforms/`, `pipeline` | Bohdan |
 
+## External Library For Evaluation (`evaluation/`)
+
+For `evaluation/test.py`, we use the external dataset library **OrthoLoC**.
+
+Install in your virtual environment:
+
+```bash
+pip install --no-deps git+https://github.com/deepscenario/OrthoLoC.git
+pip install imcui==0.0.7 rasterio appdirs gputil opencv-python-headless py-cpuinfo tueplots
+```
+
+Run the evaluation demo script:
+
+```bash
+python -m evaluation.test
+```

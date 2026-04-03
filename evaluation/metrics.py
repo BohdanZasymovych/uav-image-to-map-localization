@@ -50,6 +50,7 @@ from localization.pipeline import LocalizationPipeline
 class EvaluationReport:
     rmse: float
     per_frame_errors: NDArray
+    per_frame_runtimes: NDArray
     mean_runtime_s: float
     std_runtime_s: float
     mean_inlier_ratio: float
@@ -63,9 +64,50 @@ class Evaluator:
         generator: DatasetGenerator,
         map_img: NDArray,
     ) -> None:
-        # TODO: implement
-        ...
+        self.pipeline = pipeline
+        self.generator = generator
+        self.map_img = map_img
 
     def run(self, n_frames: int) -> EvaluationReport:
-        # TODO: implement
-        ...
+        frames = self.generator.generate(n_frames)
+
+        errors: list[float] = []
+        runtimes: list[float] = []
+        inlier_ratios: list[float] = []
+
+        for frame in frames:
+            _, result = self.pipeline.run(frame.uav_img, self.map_img)
+
+            error_i = float(np.linalg.norm(result.position_px - frame.ground_truth_px))
+            errors.append(error_i)
+            runtimes.append(float(result.runtime_s))
+
+            if result.n_raw_matches > 0:
+                inlier_ratios.append(float(result.n_inliers / result.n_raw_matches))
+            else:
+                inlier_ratios.append(0.0)
+
+        per_frame_errors = np.asarray(errors, dtype=np.float64)
+        runtimes_arr = np.asarray(runtimes, dtype=np.float64)
+        inlier_arr = np.asarray(inlier_ratios, dtype=np.float64)
+
+        if per_frame_errors.size == 0:
+            rmse = 0.0
+            mean_runtime_s = 0.0
+            std_runtime_s = 0.0
+            mean_inlier_ratio = 0.0
+        else:
+            rmse = float(np.sqrt(np.mean(per_frame_errors**2)))
+            mean_runtime_s = float(np.mean(runtimes_arr))
+            std_runtime_s = float(np.std(runtimes_arr))
+            mean_inlier_ratio = float(np.mean(inlier_arr))
+
+        return EvaluationReport(
+            rmse=rmse,
+            per_frame_errors=per_frame_errors,
+            per_frame_runtimes=runtimes_arr,
+            mean_runtime_s=mean_runtime_s,
+            std_runtime_s=std_runtime_s,
+            mean_inlier_ratio=mean_inlier_ratio,
+            n_frames=len(frames),
+        )
