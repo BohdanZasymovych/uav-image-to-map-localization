@@ -125,5 +125,15 @@ class RANSAC:
         return best_M, best_mask, iterations_done
 
     def _adaptive_iters(self, n_inliers: int, n_total: int) -> int:
-        # TODO: implement
-        ...
+        w = n_inliers / n_total
+        if w == 0:
+            return self.max_iterations
+        p_all_inliers = w ** self.model.min_points
+        if p_all_inliers >= 1.0:
+            return 1
+        denom = np.log(1.0 - p_all_inliers)
+        if np.isclose(denom, 0.0):
+            return self.max_iterations
+        n = int(np.ceil(np.log(1.0 - self.confidence) / denom))
+        return min(max(n, 1), self.max_iterations)
+       
