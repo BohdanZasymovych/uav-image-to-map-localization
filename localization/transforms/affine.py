@@ -46,5 +46,20 @@ from localization.transforms.base import TransformationModel
 
 
 class AffineModel(TransformationModel):
-    # TODO: implement
-    ...
+    @property
+    def min_points(self) -> int:
+        """
+        Minimum correspondences required to call estimate().
+        RANSAC uses this as the random sample size per iteration.
+        Affine: 3 — Projective: 4 — Similarity: 2.
+        """
+        return 
+
+    @property
+    def dof(self) -> int:
+        """
+        Degrees of freedom of the model. Informational only.
+        Affine: 6 — Projective: 8 — Similarity: 4.
+        """
+        ...
+

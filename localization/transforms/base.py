@@ -124,7 +124,7 @@ class TransformationModel(ABC):
         dst_pts: NDArray,
     ) -> NDArray:
         """
-        Per-point Euclidean reprojection error. Concrete — do not override.
+        Per-point Euclidean reprojection error.
 
         Delegates to project() so RANSAC needs no model-specific error logic.
 
