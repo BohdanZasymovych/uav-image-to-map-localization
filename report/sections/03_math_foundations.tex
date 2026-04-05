@@ -23,11 +23,37 @@ The problem is posed as an optimization task. The objective is to estimate the o
 \end{equation}
 
 \subsection{Scale-Invariant Feature Detection and Matching}
-To establish correspondences between the UAV imagery and the reference map, we utilize the Scale-Invariant Feature Transform (SIFT) algorithm, which represents keypoints as 128-dimensional continuous feature vectors. The similarity between a query descriptor $v$ and a train descriptor $u$ is determined using the Euclidean distance ($L_2$ norm) in the feature space:
-$$d(v, u) = \sqrt{\sum_{k=1}^{128} (v_k - u_k)^2}$$
-Due to the highly repetitive nature of aerial landscapes, direct nearest-neighbor matching is prone to false positives. To mathematically mitigate this, correspondences are filtered using Lowe's ratio test. For any given descriptor, let $d_1$ be the distance to its closest neighbor and $d_2$ be the distance to the second closest neighbor. A match is considered reliable and unique only if it satisfies the following inequality:
-$$\frac{d_1}{d_2} < \tau$$
-where $\tau$ is a predefined ratio threshold.
+The localization pipeline relies on the Scale-Invariant Feature Transform (SIFT) to extract distinct geometric anchors robust to altitude and rotation variations. SIFT identifies interest points in the scale space by convolving the input image $I(x, y)$ with a 2D Gaussian filter, 
+\begin{equation}
+G(x, y, \sigma) = \frac{1}{2\pi\sigma^2}e^{-(x^2+y^2)/2\sigma^2}
+\end{equation}
+. To efficiently approximate the computationally expensive Laplacian of Gaussian (which identifies regions of rapid intensity change), the scale space is constructed using the Difference of Gaussians (DoG) kernel:
+\begin{equation}
+D(x, y, \sigma) = (G(x, y, k\sigma) - G(x, y, \sigma)) * I(x, y)
+\end{equation}
+where the scale multiplier is $k = 2^{1/s}$. This effectively divides each octave (a doubling of the blur parameter $\sigma$) into $s$ intermediate intervals. Keypoint candidates are identified as local extrema by comparing each pixel to its 26 neighbors across adjacent scales. 
+
+To achieve sub-pixel accuracy, candidate coordinates $\mathbf{x} = (x, y, \sigma)^T$ are refined via a 3D quadratic Taylor expansion:
+\begin{equation}
+D(\mathbf{x}) = D + \frac{\partial D}{\partial \mathbf{x}}^T \mathbf{x} + \frac{1}{2} \mathbf{x}^T \frac{\partial^2 D}{\partial \mathbf{x}^2} \mathbf{x}
+\end{equation}
+Because DoG responses are highly sensitive to straight edges (which suffer from the aperture problem and are poor geometric anchors), unstable points are eliminated using the Hessian matrix $\mathbf{H}$ evaluated at the keypoint:
+\begin{equation}
+\mathbf{H} = \begin{bmatrix} D_{xx} & D_{xy} \\ D_{xy} & D_{yy} \end{bmatrix}
+\end{equation}
+Let $\alpha$ and $\beta$ be the eigenvalues of $\mathbf{H}$, representing principal curvatures, with ratio $r = \alpha/\beta$. Instead of explicitly computing eigenvalues, SIFT evaluates the condition based on the trace and determinant:
+\begin{equation}
+\frac{\text{Tr}(\mathbf{H})^2}{\text{Det}(\mathbf{H})} = \frac{(\alpha+\beta)^2}{\alpha\beta} = \frac{(r+1)^2}{r} < \frac{(r_{\text{th}}+1)^2}{r_{\text{th}}}
+\end{equation}
+where $r_{\text{th}}$ is a defined threshold. Since edges have one large and one small eigenvalue (yielding a large $r$), this inequality effectively filters them out, leaving only distinct corner-like features. 
+
+Next, canonical orientations are assigned based on local gradient histograms to ensure rotation invariance. A $16 \times 16$ spatial grid around the keypoint is divided into sixteen $4 \times 4$ sub-regions. An 8-bin gradient orientation histogram is computed for each sub-region, producing a $4 \times 4 \times 8 = 128$-dimensional normalized feature vector that uniquely describes the local texture.
+
+Finally, descriptors from the UAV image and the reference map are paired using the Euclidean distance ($L_2$ norm). To reject ambiguous correspondences caused by repetitive aerial textures, we apply Lowe's ratio test. Let $d_1$ and $d_2$ be the distances from a query descriptor to its nearest and second-nearest neighbors. A match is accepted only if:
+\begin{equation}
+\frac{d_1}{d_2} < \tau
+\end{equation}
+where $\tau$ is a predefined threshold. This guarantees that only highly reliable matches propagate to the transformation estimation stage.
 
 \subsection{Robust Estimation via RANSAC}\label{subsec:ransac}
 % TODO: write content
