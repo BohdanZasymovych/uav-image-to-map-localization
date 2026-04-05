@@ -22,8 +22,6 @@ The problem is posed as an optimization task. The objective is to estimate the o
 \hat{T} = \arg\min_T \sum_{i=1}^{n} \left\|\mathbf{p}_i^{map} - T\mathbf{p}_i^{uav}\right\|^2.
 \end{equation}
 
-
-
 \subsection{Scale-Invariant Feature Detection and Matching}
 The localization pipeline relies on the Scale-Invariant Feature Transform (SIFT) to extract distinct geometric anchors robust to altitude and rotation variations. SIFT identifies interest points in the scale space by convolving the input image $I(x, y)$ with a 2D Gaussian filter, 
 \begin{equation}
