@@ -1,0 +1,31 @@
+\section{Results}
+
+\subsection{Single Image Match}
+Single-image localization was executed with SIFT + Affine configuration on map image \texttt{data/satellite-images/satellite01.tif} and UAV frame \texttt{synthetic\_dataset/uav\_frames/frame\_0040.png}. The run produced:
+
+\begin{itemize}
+	\item Raw matches: 478
+	\item Inliers after RANSAC: 471
+	\item RANSAC iterations: 2
+	\item Runtime (without match rendering): 1.044855 s
+	\item Estimated map position: $(179.9858, 866.8395)$ px
+\end{itemize}
+
+Generated artifacts:
+\begin{itemize}
+	\item \texttt{outputs/matches\_before\_ransac.png}
+	\item \texttt{outputs/matches\_after\_ransac.png}
+	\item \texttt{outputs/map\_with\_estimated\_bbox.png}
+\end{itemize}
+
+\subsection{Synthetic Dataset Evaluation}
+Synthetic evaluation was run for 50 generated frames with seed 13 and crop size $256 \times 256$. The evaluator successfully processed 45 frames and skipped 5 frames due to insufficient correspondences for affine estimation.
+
+\begin{itemize}
+	\item RMSE: 1.4514 px
+	\item Mean runtime: 0.473441 s
+	\item Runtime standard deviation: 0.201655 s
+	\item Mean inlier ratio: 0.8166
+\end{itemize}
+
+Evaluation plots were saved to \texttt{outputs-evaluation/plots}.

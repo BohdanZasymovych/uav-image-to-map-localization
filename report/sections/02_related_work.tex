@@ -1,0 +1,23 @@
+\section{Related Work}
+
+\subsection{Absolute Visual Localization Approaches}
+As outlined in \cite{b1}, vision-based localization includes map-independent methods (estimating relative motion with drift) and map-based methods (providing drift-free absolute coordinates). For map-based UAV-to-satellite registration, there are three primary paradigms:
+
+\begin{itemize}
+    \item \textbf{Direct Template Matching:} Slides the real-time image across the reference map to find the highest raw pixel correlation.
+    \item \textbf{Feature-Point Matching:} Extracts distinct geometric interest points and matches their mathematical descriptors.
+    \item \textbf{Deep Learning-Based Matching:} Uses neural networks to extract high-level semantic context.
+\end{itemize}
+
+Template matching compares raw pixels, making it fast but sensitive to scale and rotation. Feature matching extracts geometric keypoints, ensuring robustness against tilt and altitude changes. Deep learning evaluates semantic context, handling extreme variations at high computational costs.
+
+\subsection{Keypoint Detection and Description}
+Feature detection computes abstractions of image information. Based on \cite{b2}, the primary traditional algorithms are:
+
+\begin{itemize}
+    \item \textbf{SIFT:} Uses Difference of Gaussian for scale-space extrema estimation and descriptor generation. While computationally complex, it is highly robust against rotation and affine transformations.
+    \item \textbf{SURF:} Approximates the Difference of Gaussian with box filters. It performs faster than SIFT while maintaining detection quality.
+    \item \textbf{ORB:} A fusion of FAST and BRIEF. It is the fastest algorithm but more sensitive to certain transformations than SIFT.
+\end{itemize}
+
+While ORB is faster, SIFT achieves higher matching rates across most transformations, including intensity, rotation, shearing, and fisheye distortion \cite{b2}. SIFT is selected for this project due to this robustness.
