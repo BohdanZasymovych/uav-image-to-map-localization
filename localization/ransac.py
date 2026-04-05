@@ -32,11 +32,11 @@
 #            c. Call model.reprojection_error() on ALL N points.
 #            d. Build boolean mask: error < epsilon.
 #            e. If inlier count > best count: update best_mask,
-#               recompute n_iters = min(_adaptive_iters(...), max_iterations).
+#               recompute n_iters = min(__adaptive_iters(...), max_iterations).
 #       3. Re-estimate best_M on full best_mask inlier set.
 #       4. Return (best_M, best_mask, iterations_done).
 #
-#   _adaptive_iters(n_inliers, n_total) -> int:
+#   __adaptive_iters(n_inliers, n_total) -> int:
 #     w = n_inliers / n_total
 #     N = ceil( log(1 - confidence) / log(1 - w ^ min_points) )
 #     Guard: if w == 0 return max_iterations. Clamp result to max_iterations.
@@ -112,7 +112,7 @@ class RANSAC:
             if n_inliers > best_inlier_count:
                 best_mask = mask.copy()
                 best_inlier_count = n_inliers
-                n_iters = min(self._adaptive_iters(n_inliers, n_total), self.max_iterations)
+                n_iters = min(self.__adaptive_iters(n_inliers, n_total), self.max_iterations)
 
         if best_inlier_count < min_points:
             raise RuntimeError("RANSAC failed to find a valid model")
@@ -124,7 +124,7 @@ class RANSAC:
 
         return best_M, best_mask, iterations_done
 
-    def _adaptive_iters(self, n_inliers: int, n_total: int) -> int:
+    def __adaptive_iters(self, n_inliers: int, n_total: int) -> int:
         w = n_inliers / n_total
         if w == 0:
             return self.max_iterations
