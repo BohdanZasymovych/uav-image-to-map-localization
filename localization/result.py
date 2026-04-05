@@ -28,7 +28,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-import numpy as np
 from numpy.typing import NDArray
 
 
@@ -47,9 +46,17 @@ class MatchResult:
     dst_pts: NDArray
     """Matched keypoint coordinates in the map image, shape (N, 2)."""
 
+    raw_match_image: NDArray
+    """
+    BGR image produced by cv2.drawMatches showing all matched correspondences
+    before RANSAC filtering.
+    Shape (H, W, 3). Displayed directly in the UI and saved in evaluation.
+    """
+
     match_image: NDArray
     """
-    BGR image produced by cv2.drawMatches showing inlier correspondences.
+    BGR image produced by cv2.drawMatches showing inlier correspondences
+    after RANSAC filtering.
     Shape (H, W, 3). Displayed directly in the UI and saved in evaluation.
     """
 
@@ -59,8 +66,7 @@ class LocalizationResult:
     """
     Final output of a single pipeline run.
 
-    Flows from LocalizationPipeline -> Evaluator -> UI.
-    All downstream consumers depend on this type and nothing else.
+    Flows from LocalizationPipeline -> Evaluator -> App.
     """
 
     transform_matrix: NDArray
