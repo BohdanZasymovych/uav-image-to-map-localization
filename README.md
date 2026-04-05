@@ -1,67 +1,124 @@
-# UAV Localization — Aerial-to-Satellite Image Registration
+# UAV Image-to-Map Localization
 
-Vision-based UAV localization via feature matching, RANSAC, and affine/projective
-transformation estimation. Linear algebra course project.
+This project localizes a UAV camera frame on a large satellite map.
 
-## Setup
+In short: given one UAV image and one reference map image, the system estimates where the UAV frame center is located on the map and saves visual + JSON outputs.
+
+## Problem We Solve
+
+GPS can be noisy or unavailable in some conditions. We address a vision-based alternative: match the UAV image to a known satellite map and recover the UAV position directly from image content.
+
+## Algorithms and Pipeline
+
+Current implementation uses:
+
+- SIFT keypoints and descriptors
+- Descriptor matching with FLANN + ratio filtering
+- RANSAC for robust outlier rejection
+- Affine/Similarity geometric transform estimation
+
+Pipeline flow:
+
+1. Load map image and UAV image.
+2. Detect and describe local features in both images.
+3. Match descriptors between UAV and map.
+4. Use RANSAC to keep geometrically consistent matches.
+5. Estimate the transform and project UAV image center to map coordinates.
+6. Save artifacts: raw matches, inlier matches, map overlay with estimated bounding box, JSON summary.
+
+## Evaluation and Current Results
+
+### Single Image Localization
+
+- Raw matches: 478
+- Inliers after RANSAC: 471
+- Runtime: 1.045 s
+- Estimated map position: (179.99, 866.84) px
+
+Example outputs:
+
+**Figure 1. Inlier matches after RANSAC**
+
+![Figure 1 - Inlier matches after RANSAC](report/figs/matches_after_ransac.png)
+
+| Figure 2. Input UAV frame | Figure 3. Estimated UAV location on map |
+| --- | --- |
+| ![Figure 2 - Input UAV frame](report/figs/uav_image.png) | ![Figure 3 - Estimated UAV location on map](report/figs/map_with_estimated_bbox.png) |
+
+### Dataset Evaluation
+
+- Frames processed: 60
+- Successful localizations: 54 (90%)
+- RMSE: 16.69 px
+- Mean runtime: 0.459 +/- 0.228 s
+- Mean inlier ratio: 0.807
+
+Evaluation plots:
+
+**Figure 4. Error distribution**
+
+![Figure 4 - Error distribution](report/figs/error_distribution.png)
+
+**Figure 5. Runtime distribution**
+
+![Figure 5 - Runtime distribution](report/figs/runtime_distribution.png)
+
+## Project Structure
+
+- `localization/` contains the core computer-vision localization logic: feature extraction/matching, transformation models, model-agnostic RANSAC, and the main pipeline that outputs UAV map coordinates.
+- `evaluation/` contains synthetic data generation and benchmarking utilities: frame generation, metric computation (RMSE, runtime, inlier ratio), and plot creation.
+- `app/app_cli/` is the production command-line app for one map/UAV pair. It handles arguments, configuration loading, pipeline execution, rendering of overlays, and JSON summary export.
+- `app/app_ui/` provides the Streamlit UI for interactive experiments and quick visual checks.
+- `configs/default.yaml` is the central runtime configuration for extractor/model selection and RANSAC/evaluation parameters.
+- `data/` stores reference map images and prepared synthetic datasets used for experiments.
+- `generate_and_evaluate.py` is the end-to-end script to generate synthetic samples and evaluate localization in one run.
+- `report/` contains the written project report and figure assets used for documentation.
+
+## Installation
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Run the UI
+## Usage
+
+### Run CLI Localization for One UAV Frame
+
+**Run command:**
 
 ```bash
-streamlit run app/ui.py
+python -m app.app_cli.cli \
+  --map <MAP_IMAGE_PATH> \
+  --uav <UAV_IMAGE_PATH> \
+  --config <CONFIG_PATH> \
+  --output-dir <OUTPUT_DIR> \
+  [--log-level <DEBUG|INFO|WARNING|ERROR|CRITICAL>] \
+  [--log-file <LOG_FILE_PATH>]
 ```
 
+**Parameter quick reference:**
 
-## Package structure
+- `--map`: path to the reference satellite map image.
+- `--uav`: path to the UAV frame/image to localize.
+- `--config`: path to the YAML configuration file.
+- `--output-dir`: folder where output images and JSON summary are saved.
+- `--log-level` (optional): logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`).
+- `--log-file` (optional): file path to save logs.
 
-```
-localization/
-  features/          FeatureExtractor ABC + SIFT, ORB, SURF
-  transforms/        TransformationModel ABC + Affine, Projective, Similarity
-  ransac.py          model-agnostic RANSAC
-  pipeline.py        LocalizationPipeline orchestrator
-  georeferencing.py  pixel -> lat/lon conversion
-  result.py          shared dataclasses (MatchResult, LocalizationResult)
-evaluation/
-  base.py            DatasetGenerator ABC + SyntheticFrame dataclass
-  dataset.py         SyntheticDatasetGenerator
-  metrics.py         Evaluator + EvaluationReport
-  visualizer.py      matplotlib plots
-app/
-  ui.py              Streamlit application
-```
-
-## Work split
-
-<!-- | File(s)                              | Owner    |
-|--------------------------------------|----------|
-| transforms/base, affine, projective, similarity, georeferencing | Person A |
-| features/base, sift, orb, surf, ransac, pipeline               | Person B |
-| evaluation/base, dataset, metrics, visualizer, app/ui           | Person C | -->
-
-| File(s)                              | Owner    |
-|--------------------------------------|----------|
-| `evaluation/`, `ransac` | Solomiia |
-| `features/`, `georeferencing` | Marta |
-| `transforms/`, `pipeline` | Bohdan |
-
-## External Library For Evaluation (`evaluation/`)
-
-For `evaluation/test.py`, we use the external dataset library **OrthoLoC**.
-
-Install in your virtual environment:
+**Example command:**
 
 ```bash
-pip install --no-deps git+https://github.com/deepscenario/OrthoLoC.git
-pip install imcui==0.0.7 rasterio appdirs gputil opencv-python-headless py-cpuinfo tueplots
+python -m app.app_cli.cli \
+  --map data/examples/satellite_example.tif \
+  --uav data/examples/uav_example_01.png \
+  --config configs/default.yaml
 ```
 
-Run the evaluation demo script:
+**Main outputs are written to `outputs/`:**
 
-```bash
-python -m evaluation.test
-```
+- `matches_before_ransac.png`
+- `matches_after_ransac.png`
+- `map_with_estimated_bbox.png`
+- `localization_summary.json`
