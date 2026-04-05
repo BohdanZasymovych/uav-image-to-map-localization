@@ -82,9 +82,9 @@ class SyntheticDatasetGenerator(DatasetGenerator):
         frames: list[SyntheticFrame] = []
         h, w = self.map_img.shape[:2]
 
-        scale_range = kwargs.get("scale_range", (0.4, 0.8))
-        rotation_range = kwargs.get("rotation_range", (-30, 30))
-        shear_range = kwargs.get("shear_range", (-0.1, 0.1))
+        scale_range = kwargs.get("scale_range", (0.9, 1.1))
+        rotation_range = kwargs.get("rotation_range", (-15, 15))
+        shear_range = kwargs.get("shear_range", (-0.03, 0.03))
         crop_size = kwargs.get("crop_size", (100, 100))
         crop_h = max(1, min(int(crop_size[0]), h))
         crop_w = max(1, min(int(crop_size[1]), w))
@@ -105,7 +105,7 @@ class SyntheticDatasetGenerator(DatasetGenerator):
                 M_local[:2],
                 (crop_w, crop_h),
                 flags=cv2.INTER_LINEAR,
-                borderMode=cv2.BORDER_REFLECT101,
+                borderMode=cv2.BORDER_REPLICATE,
             )
 
             T_origin = np.array(
@@ -189,5 +189,5 @@ class SyntheticDatasetGenerator(DatasetGenerator):
             [0.0, 0.0, 1.0],
         ], dtype=np.float64)
 
-        # For cv2.warpAffine, M maps destination coordinates to source coordinates.
+
         return T_back @ R @ Sh @ S @ T_to_center
