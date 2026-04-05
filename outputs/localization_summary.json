@@ -1,0 +1,45 @@
+{
+  "map_path": "data/satellite-images/satellite01.tif",
+  "uav_path": "synthetic_dataset/uav_frames/frame_0040.png",
+  "config_path": "configs/default.yaml",
+  "extractor": "SIFTExtractor",
+  "model": "AffineModel",
+  "ransac": {
+    "epsilon": 3.0,
+    "confidence": 0.99,
+    "max_iterations": 2000
+  },
+  "result": {
+    "position_px": [
+      179.9857530588954,
+      866.8395291850885
+    ],
+    "position_geo": null,
+    "n_raw_matches": 478,
+    "n_inliers": 471,
+    "ransac_iterations": 2,
+    "runtime_s": 1.0448552500001824,
+    "transform_matrix": [
+      [
+        1.2864820456557178,
+        -0.247850710158021,
+        47.04094211519022
+      ],
+      [
+        0.36368775048129715,
+        1.2535833233555485,
+        659.8288317339723
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "artifacts": {
+    "raw_match_image": "outputs/matches_before_ransac.png",
+    "inlier_match_image": "outputs/matches_after_ransac.png",
+    "map_with_estimated_bbox": "outputs/map_with_estimated_bbox.png"
+  }
+}
