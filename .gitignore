@@ -1,3 +1,9 @@
+# Dataset generation and program run artifacts
+test
+outputs
+synthetic_dataset
+datasets
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

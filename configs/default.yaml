@@ -1,7 +1,3 @@
-# default hyperparameters
-# loaded by app/ui.py and evaluation scripts
-# all values can be overridden via Streamlit sidebar sliders
-
 extractor: SIFT
 model: Affine
 
