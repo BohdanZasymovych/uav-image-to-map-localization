@@ -11,7 +11,127 @@ $$\frac{d_1}{d_2} < \tau$$
 where $\tau$ is a predefined ratio threshold.
 
 \subsection{Robust Estimation via RANSAC}
-% TODO: write content
+
+Given a set of noisy correspondences between UAV image points and map points,
+\[
+\mathcal{D} = \{(x_i, y_i) \leftrightarrow (X_i, Y_i)\}_{i=1}^{N},
+\]
+the goal is to estimate transformation parameters $\theta$ (affine model)
+that are consistent with the largest subset of correct matches (inliers),
+while rejecting incorrect correspondences (outliers).
+
+\textbf{Reprojection Error Definition.}
+
+Each correspondence induces a reprojection error under model $\theta$:
+\[
+d_i(\theta) = \left\| 
+\begin{bmatrix} X_i \\ Y_i \end{bmatrix}
+-
+\hat{T}_\theta
+\begin{bmatrix} x_i \\ y_i \\ 1 \end{bmatrix}
+\right\|_2,
+\]
+where $\hat{T}_\theta$ is the affine transformation matrix.
+
+A point is considered an inlier if:
+\[
+d_i(\theta) < \epsilon,
+\]
+where $\epsilon$ is a predefined threshold.
+
+Thus, the objective is:
+\[
+\theta^* = \arg\max_{\theta} \sum_{i=1}^{N} \mathbf{1}\big(d_i(\theta) < \epsilon\big),
+\]
+i.e., maximize the number of inliers.
+
+\textbf{RANSAC Iterative Procedure.}
+
+At each iteration, a minimal subset of $s$ correspondences is sampled:
+\[
+\mathcal{S} \subset \mathcal{D}, \quad |\mathcal{S}| = s,
+\]
+where for the affine model $s = 3$.
+
+Using this subset, a candidate model $\theta$ is estimated by solving
+the linear system defined by the affine transformation.
+
+The model is then evaluated on the full dataset by computing
+the reprojection errors $\{d_i(\theta)\}_{i=1}^{N}$ and constructing
+the inlier set:
+\[
+\mathcal{I}(\theta) = \{ i \mid d_i(\theta) < \epsilon \}.
+\]
+
+The model with the largest consensus set is selected:
+\[
+\theta^* = \arg\max_{\theta} |\mathcal{I}(\theta)|.
+\]
+
+\textbf{Adaptive Number of Iterations.}
+
+The number of RANSAC iterations is derived probabilistically.
+Let $w$ denote the probability that a randomly selected correspondence is an inlier:
+\[
+w = \frac{|\mathcal{I}|}{N}.
+\]
+
+The probability that all $s$ points in a randomly sampled subset are inliers is:
+\[
+P_{\text{all-inliers}} = w^s.
+\]
+
+Thus, the probability that a sampled subset contains at least one outlier is:
+\[
+1 - w^s.
+\]
+
+If we perform $k$ independent iterations, the probability that all sampled subsets
+contain at least one outlier is:
+\[
+(1 - w^s)^k.
+\]
+
+Therefore, the probability that at least one of the $k$ samples consists entirely
+of inliers is:
+\[
+1 - (1 - w^s)^k.
+\]
+
+To guarantee a desired confidence level $p$, we require:
+\[
+1 - (1 - w^s)^k \geq p.
+\]
+
+Rearranging the inequality:
+\[
+(1 - w^s)^k \leq 1 - p.
+\]
+
+Taking logarithms on both sides:
+\[
+k \log(1 - w^s) \leq \log(1 - p).
+\]
+
+Finally, solving for $k$:
+\[
+k = \frac{\log(1 - p)}{\log(1 - w^s)}.
+\]
+
+\textbf{Final Model Estimation.}
+
+After identifying the best inlier set $\mathcal{I}^*$, the final model
+parameters are recomputed using all inliers by solving the
+overdetermined system:
+\[
+A v = b,
+\]
+using the least-squares solution:
+\[
+v = (A^T A)^{-1} A^T b.
+\]
+
+
 
 \subsection{Geometric Transformation Models}
 Geometric transformations define the mathematical mapping between UAV imagery and the reference map. We consider three linear models:

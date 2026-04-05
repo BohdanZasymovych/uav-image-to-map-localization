@@ -29,8 +29,10 @@ The feature extraction module accepts two raw BGR images (the UAV camera feed an
 % matrix assembly here — that belongs in IV-C. Cite Section III-B for all
 % math. Keep to one paragraph.
 % -----------------------------------------------------------------------------
+
 \subsection{RANSAC Configuration}
-% TODO: write content
+
+The RANSAC algorithm is applied to the set of matched feature correspondences to robustly estimate the transformation by filtering out outliers. We use an inlier threshold $\epsilon = 3$ pixels, meaning that a correspondence is considered consistent with the model if its reprojection error is below this value. A smaller $\epsilon$ would reject correct matches due to noise, while a larger value would incorrectly include outliers, reducing estimation accuracy. The confidence parameter is set to $p = 0.99$, ensuring a high probability of sampling at least one all-inlier subset, as derived in Section III-B. The maximum number of iterations is limited to $2000$ to bound computation time in worst-case scenarios. The minimal sample size depends on the transformation model: $s = 3$ for the affine model and $s = 2$ for the similarity model. Since the required number of iterations $k$ depends exponentially on $s$ (see Section III-B), models with smaller minimal sets converge faster but may be less expressive. The output of this stage is a boolean inlier mask over all correspondences, identifying matches that satisfy the reprojection error threshold, which is then passed to the transformation estimation stage in Section IV-C.
 
 % -----------------------------------------------------------------------------
 % 4.3 Transformation Estimation
