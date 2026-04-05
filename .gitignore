@@ -1,7 +1,8 @@
 # Dataset generation and program run artifacts
 test
-outputs
+# outputs
 synthetic_dataset
+synthetic-dataset
 datasets
 
 # Byte-compiled / optimized / DLL files
