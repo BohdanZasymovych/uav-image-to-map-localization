@@ -33,10 +33,54 @@ from __future__ import annotations
 
 import numpy as np
 from numpy.typing import NDArray
+import cv2
 
 from localization.features.base import FeatureExtractor
 
 
 class SIFTExtractor(FeatureExtractor):
-    # TODO: implement
-    ...
+    def __init__(self, ratio: float = 0.75, n_features: int = 0) -> None:
+        if not (0.0 < ratio < 1.0):
+            raise ValueError(f"ratio must be in (0, 1), got {ratio}")
+        if n_features < 0:
+            raise ValueError(f"n_features must be >= 0, got {n_features}")
+
+        self.ratio = ratio
+        self.n_features = n_features
+        self.detector = cv2.SIFT_create(nfeatures=n_features)
+        self.matcher = cv2.BFMatcher(cv2.NORM_L2)
+
+    def detect_and_compute(
+        self,
+        img: NDArray,
+    ) -> tuple[list, NDArray]:
+        if img.ndim == 3:
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = img
+
+        keypoints, descriptors = self.detector.detectAndCompute(gray, None)
+        if descriptors is None:
+            descriptors = np.empty((0, 128), dtype=np.float32)
+
+        return keypoints, descriptors
+
+    def match(
+        self,
+        desc1: NDArray,
+        desc2: NDArray,
+    ) -> list:
+        if desc1.shape[0] == 0 or desc2.shape[0] == 0:
+            return []
+
+        knn_matches = self.matcher.knnMatch(desc1, desc2, k=2)
+
+        good_matches = []
+        for pair in knn_matches:
+            if len(pair) < 2:
+                continue
+            m, n = pair
+            if m.distance < self.ratio * n.distance:
+                good_matches.append(m)
+
+        return good_matches
