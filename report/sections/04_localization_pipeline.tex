@@ -12,7 +12,7 @@
 % Do NOT re-derive SIFT math — cite Section III-A. Keep to one paragraph.
 % -----------------------------------------------------------------------------
 \subsection{Feature Extraction and Matching}
-% TODO: write content
+The feature extraction module accepts two raw BGR images (the UAV camera feed and the reference satellite map) as input, explicitly converting them to grayscale prior to processing. First, SIFT keypoints and descriptors are computed for both images. Second, to bypass the $O(N \cdot M)$ computational bottleneck of Brute-Force matching, we implement the Fast Library for Approximate Nearest Neighbors (FLANN). By structuring the satellite map descriptors into a randomized KD-tree forest (configured with 5 trees and 50 search checks), the matching complexity is reduced to $O(N \log M)$, enabling rapid nearest-neighbor retrieval. These initial matches are subsequently filtered using Lowe's ratio test (as defined in Section III-B) with a threshold of $\tau = 0.75$. This specific threshold is chosen to eliminate the vast majority of ambiguous matches caused by repetitive textures while retaining a sufficient number of high-quality geometric anchors. The final output of this stage consists of two corresponding arrays, \texttt{src\_pts} and \texttt{dst\_pts}, each of shape $(N, 2)$, which represent the matched pixel coordinates in the UAV and map coordinate spaces, respectively.
 
 % -----------------------------------------------------------------------------
 % 4.2 RANSAC Configuration

@@ -22,8 +22,12 @@ The problem is posed as an optimization task. The objective is to estimate the o
 \hat{T} = \arg\min_T \sum_{i=1}^{n} \left\|\mathbf{p}_i^{map} - T\mathbf{p}_i^{uav}\right\|^2.
 \end{equation}
 
-\subsection{Scale-Invariant Feature Detection}\label{subsec:feature_detection}
-% TODO: write content
+\subsection{Scale-Invariant Feature Detection and Matching}
+To establish correspondences between the UAV imagery and the reference map, we utilize the Scale-Invariant Feature Transform (SIFT) algorithm, which represents keypoints as 128-dimensional continuous feature vectors. The similarity between a query descriptor $v$ and a train descriptor $u$ is determined using the Euclidean distance ($L_2$ norm) in the feature space:
+$$d(v, u) = \sqrt{\sum_{k=1}^{128} (v_k - u_k)^2}$$
+Due to the highly repetitive nature of aerial landscapes, direct nearest-neighbor matching is prone to false positives. To mathematically mitigate this, correspondences are filtered using Lowe's ratio test. For any given descriptor, let $d_1$ be the distance to its closest neighbor and $d_2$ be the distance to the second closest neighbor. A match is considered reliable and unique only if it satisfies the following inequality:
+$$\frac{d_1}{d_2} < \tau$$
+where $\tau$ is a predefined ratio threshold.
 
 \subsection{Robust Estimation via RANSAC}\label{subsec:ransac}
 % TODO: write content

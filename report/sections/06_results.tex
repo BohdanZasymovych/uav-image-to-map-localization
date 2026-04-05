@@ -1,31 +1,60 @@
-\section{Results}
+\section{Results}\label{sec:results}
 
-\subsection{Single Image Match}
-Single-image localization was executed with SIFT + Affine configuration on map image \texttt{data/satellite-images/satellite01.tif} and UAV frame \texttt{synthetic\_dataset/uav\_frames/frame\_0040.png}. The run produced:
+At the current stage, we have implemented a Command Line Interface (CLI) application that ingests a reference map and a UAV camera image, matches their features, and calculates the absolute map coordinates of the UAV image's center. The script is driven by a configuration file that defines the geometric transformation model and the necessary algorithmic parameters.
 
-\begin{itemize}
-	\item Raw matches: 478
-	\item Inliers after RANSAC: 471
-	\item RANSAC iterations: 2
-	\item Runtime (without match rendering): 1.044855 s
-	\item Estimated map position: $(179.9858, 866.8395)$ px
-\end{itemize}
-
-Generated artifacts:
-\begin{itemize}
-	\item \texttt{outputs/matches\_before\_ransac.png}
-	\item \texttt{outputs/matches\_after\_ransac.png}
-	\item \texttt{outputs/map\_with\_estimated\_bbox.png}
-\end{itemize}
-
-\subsection{Synthetic Dataset Evaluation}
-Synthetic evaluation was run for 50 generated frames with seed 13 and crop size $256 \times 256$. The evaluator successfully processed 45 frames and skipped 5 frames due to insufficient correspondences for affine estimation.
+\subsection{Single Image Match}\label{subsec:single_image_match}
+A single-image localization test was executed using the Affine transformation model. The inputs consisted of a reference satellite map and a single simulated UAV frame from our artificially generated dataset. The run produced the following metrics:
 
 \begin{itemize}
-	\item RMSE: 1.4514 px
-	\item Mean runtime: 0.473441 s
-	\item Runtime standard deviation: 0.201655 s
-	\item Mean inlier ratio: 0.8166
+    \item \textbf{Raw matches:} 478
+    \item \textbf{Inliers after RANSAC:} 471
+    \item \textbf{Runtime (without match rendering):} 1.045 s
+    \item \textbf{Estimated map position:} $(179.99, 866.84)$ px
 \end{itemize}
 
-Evaluation plots were saved to \texttt{outputs-evaluation/plots}.
+The pipeline generated the following visual artifacts to verify the matching and localization process:
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\columnwidth]{figs/matches_after_ransac.png}
+    \caption{Geometrically consistent inlier matches retained after applying the RANSAC algorithm.}
+    \label{fig:matches_after_ransac}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\columnwidth]{figs/uav_image.png} 
+    
+    \vspace{0.4cm}
+    
+    \includegraphics[width=\columnwidth]{figs/map_with_estimated_bbox.png}
+    \caption{Top: The input simulated UAV camera frame. Bottom: The reference satellite map with the final estimated UAV location highlighted by a bounding box.}
+    \label{fig:map_with_bbox}
+\end{figure}
+
+\FloatBarrier
+
+\subsection{Dataset Evaluation}\label{subsec:dataset_evaluation}
+To quantify pipeline behavior beyond a single frame, we ran the dataset-level evaluation on 60 synthetically generated UAV crops over the same reference map. The evaluator successfully localized 54 frames and skipped 6 frames due to lack of the found features after RANSAC filtering. The aggregate results are:
+
+\begin{itemize}
+    \item \textbf{Successful localizations:} 54 / 60 (90\%)
+    \item \textbf{RMSE:} 16.69 px
+    \item \textbf{Mean runtime:} $0.459 \pm 0.228$ s
+    \item \textbf{Mean inlier ratio:} 0.807
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\columnwidth]{figs/error_distribution.png}
+    \caption{Distribution of per-frame localization errors over the successfully processed dataset frames.}\label{fig:error_distribution}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\columnwidth]{figs/runtime_distribution.png}
+    \caption{Per-frame runtime distribution for the dataset evaluation run.}\label{fig:runtime_distribution}
+\end{figure}
+
+\FloatBarrier
+
