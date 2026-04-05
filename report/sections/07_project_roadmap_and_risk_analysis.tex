@@ -1,0 +1,13 @@
+\section{Project Roadmap and Risk Analysis}
+Remaining work to complete the prototype is divided into three phases over six weeks:
+
+\subsection{Timeline}
+
+\begin{itemize}
+    \item \textbf{Week 1-3 (Implementation):} Implement the full algorithm pipeline: image loading, preprocessing, SIFT, RANSAC, and final coordinate estimation.
+    \item \textbf{Week 4-5 (Testing \& Evaluation):} Find suitable satellite images, generate synthetic UAV datasets, and run tests to compute RMSE and execution times.
+    \item \textbf{Week 6 (Improvements):} If time permits, we plan to test a Projective transformation to account for non-parallel camera angles. We will also seek real-world datasets to evaluate the model on actual flight data.
+\end{itemize}
+
+\subsection{Risk Analysis}
+A primary risk is poor model performance during evaluation. While theoretically sound, the implementation may lack robustness for real-world conditions, causing high errors. If the algorithm underperforms, we will reconsider our methodology and explore alternatives, like different feature extraction methods or upgrading to a Projective transformation model.

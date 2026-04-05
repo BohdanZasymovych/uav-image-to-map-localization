@@ -1,0 +1,108 @@
+```latex
+\section{Localization Pipeline}
+
+% -----------------------------------------------------------------------------
+% 4.1 Feature Extraction and Matching
+% -----------------------------------------------------------------------------
+% WRITE: Describe the two-step process: (1) SIFT keypoint detection and
+% descriptor computation on both images, (2) nearest-neighbour descriptor
+% matching filtered by Lowe's ratio test. State the parameter choices:
+% ratio threshold = 0.75, and justify it briefly. Specify the input to this
+% stage (two BGR images) and the output (two arrays src_pts and dst_pts of
+% shape (N, 2) — matched pixel coordinates in UAV and map space respectively).
+% Do NOT re-derive SIFT math — cite Section III-A. Keep to one paragraph.
+% -----------------------------------------------------------------------------
+\subsection{Feature Extraction and Matching}
+% TODO: write content
+
+% -----------------------------------------------------------------------------
+% 4.2 RANSAC Configuration
+% -----------------------------------------------------------------------------
+% WRITE: State the specific parameter values chosen: epsilon (inlier threshold
+% in pixels), confidence p, and max_iterations. Justify each value — what
+% happens if epsilon is too tight or too loose, what confidence level is
+% appropriate for this task. Then explain how min_points differs between
+% the two models (affine: 3, similarity: 2) and what consequence this has
+% for convergence speed using the iteration count formula from Section III-B.
+% Clearly state the output of this stage: a boolean inlier mask over the
+% matched point pairs, which is passed to Section IV-C. Do NOT describe
+% matrix assembly here — that belongs in IV-C. Cite Section III-B for all
+% math. Keep to one paragraph.
+% -----------------------------------------------------------------------------
+\subsection{RANSAC Configuration}
+% TODO: write content
+
+% -----------------------------------------------------------------------------
+% 4.3 Transformation Estimation
+% -----------------------------------------------------------------------------
+% WRITE: This subsection covers only the construction of the linear system
+% from the RANSAC inlier subset — NOT the derivation of why normal equations
+% work (that is in Section III-D, cite it). Show equation (3): the explicit
+% block structure of matrix A (shape 2N x 6 for affine, 2N x 4 for
+% similarity) and vector b (shape 2N), populated from the inlier point pairs.
+% Then show how the recovered parameter vector v is assembled back into the
+% 3x3 matrix M for each model. State the output: matrix M passed to IV-D.
+% Do NOT describe inlier selection here — that is IV-B.
+% -----------------------------------------------------------------------------
+\subsection{Transformation Estimation}
+This stage estimates the geometric transformation from the inlier
+correspondences identified by RANSAC. Given the inlier point pairs
+$\{(\mathbf{x}_i, \mathbf{X}_i)\}_{i=1}^{n}$, we construct the
+overdetermined linear system $A\mathbf{v} = \mathbf{b}$:
+
+\begin{equation}
+\begin{bmatrix}
+x_1 & y_1 & 1 & 0   & 0   & 0 \\
+0   & 0   & 0 & x_1 & y_1 & 1 \\
+\vdots & & & & & \vdots \\
+x_n & y_n & 1 & 0   & 0   & 0 \\
+0   & 0   & 0 & x_n & y_n & 1
+\end{bmatrix}
+\begin{bmatrix} a_1 \\ a_2 \\ t_x \\ a_3 \\ a_4 \\ t_y \end{bmatrix}
+=
+\begin{bmatrix} X_1 \\ Y_1 \\ \vdots \\ X_n \\ Y_n \end{bmatrix}
+\label{eq:linear_system}
+\end{equation}
+
+The optimal parameter vector $\mathbf{v}$ is obtained via the normal
+equations derived in Section~III-D. The recovered parameters are then
+assembled into the $3 \times 3$ transformation matrix $M$.
+
+% -----------------------------------------------------------------------------
+% 4.4 Coordinate Projection
+% -----------------------------------------------------------------------------
+% WRITE: Explain that the estimated matrix M is applied to the UAV image
+% center expressed in homogeneous coordinates: [W/2, H/2, 1]^T. Show the
+% matrix-vector product explicitly. Distinguish the affine case (drop the
+% homogeneous coordinate, always 1) from the projective case (divide by w).
+% Then show the optional pixel-to-geographic conversion as bilinear
+% interpolation over the map bounding box, giving the final (lat, lon) output.
+% This is the only subsection allowed to contain the georeferencing equations.
+% Keep to one short paragraph plus two equations.
+% -----------------------------------------------------------------------------
+\subsection{Coordinate Projection}
+% TODO: write content
+
+% -----------------------------------------------------------------------------
+% 4.5 Complete Pipeline
+% -----------------------------------------------------------------------------
+\subsection{Complete Pipeline}
+
+\begin{algorithm}[H]
+\caption{UAV Localization Pipeline}
+\begin{algorithmic}[1]
+\REQUIRE UAV Image $I_{uav}$, Reference Map $I_{map}$
+\ENSURE Global Coordinates $(X_{map}, Y_{map})$
+\STATE Convert $I_{uav}$ and $I_{map}$ to grayscale.
+\STATE Extract SIFT features and match using Lowe's ratio test.
+\STATE \textbf{while} $i < \text{max\_iterations}$ \textbf{do}
+\STATE \quad Sample minimal correspondence set and compute $M_{\text{temp}}$.
+\STATE \quad Count inliers satisfying $d < \epsilon$.
+\STATE \quad If current consensus is the largest, store $M_{\text{temp}}$ and inliers.
+\STATE \textbf{end while}
+\STATE Solve overdetermined system on full inlier set to obtain $M$.
+\STATE Project UAV center $(x_c, y_c, 1)^\top$ through $M$ to get $(X_{map}, Y_{map})$.
+\RETURN $(X_{map}, Y_{map})$
+\end{algorithmic}
+\end{algorithm}
+```
