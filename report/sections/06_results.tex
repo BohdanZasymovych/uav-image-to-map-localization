@@ -1,6 +1,6 @@
 \section{Results}\label{sec:results}
 
-At the current stage, we have implemented a Command Line Interface (CLI) application that ingests a reference map and a UAV camera image, matches their features, and calculates the absolute map coordinates of the UAV image's center. The script is driven by a configuration file that defines the geometric transformation model and the necessary algorithmic parameters.
+At the current stage, we have implemented a Command Line Interface (CLI) application that ingests a reference map and a UAV camera image, matches their features, and calculates the absolute map coordinates of the UAV image's center. The script is driven by a configuration file that defines the geometric transformation model and the necessary algorithmic parameters. All code is available on the our \href{https://github.com/BohdanZasymovych/uav-image-to-map-localization.git}{GitHub repository}
 
 \subsection{Single Image Match}\label{subsec:single_image_match}
 A single-image localization test was executed using the Affine transformation model. The inputs consisted of a reference satellite map and a single simulated UAV frame from our artificially generated dataset. The run produced the following metrics:
