@@ -126,8 +126,6 @@ class TransformationModel(ABC):
         """
         Per-point Euclidean reprojection error.
 
-        Delegates to project() so RANSAC needs no model-specific error logic.
-
         Returns
         -------
         errors : NDArray  shape (N,)

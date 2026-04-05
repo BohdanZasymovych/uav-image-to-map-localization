@@ -1,30 +1,3 @@
-# =============================================================================
-# localization/transforms/similarity.py
-# -----------------------------------------------------------------------------
-# OWNER: Person A.
-#
-# PURPOSE:
-#   Concrete 4-DOF similarity transformation model.
-#   Handles translation, rotation, and uniform scaling only (no shear).
-#   Simpler than affine; useful as a baseline or for near-nadir imagery.
-#
-# IMPLEMENT:
-#   class SimilarityModel(TransformationModel)
-#
-#   min_points -> 2
-#   dof        -> 4
-#
-#   estimate(src_pts, dst_pts) -> NDArray (3x3):
-#     Parameterisation: [[a, -b, tx], [b, a, ty], [0, 0, 1]]
-#     where a = s*cos(theta), b = s*sin(theta).
-#     Build (2N x 4) system and solve via normal equations, same pattern
-#     as AffineModel but with reduced parameter vector [a, b, tx, ty].
-#
-#   project(M, pts) -> NDArray (N, 2):
-#     Identical to AffineModel — drop homogeneous coordinate, no perspective
-#     divide needed because the last row is always [0, 0, 1].
-# =============================================================================
-
 from __future__ import annotations
 
 import numpy as np
@@ -48,7 +21,7 @@ class SimilarityModel(TransformationModel):
     @property
     def dof(self) -> int:
         """
-        Degrees of freedom of the model. Informational only.
+        Degrees of freedom of the model.
         """
         return self.DOF
 
@@ -100,3 +73,25 @@ class SimilarityModel(TransformationModel):
                                          [0, 0, 1]])
         
         return transformation_matrix
+
+    def project(
+        self,
+        M: NDArray,
+        pts: NDArray,
+    ) -> NDArray:
+        """
+        Apply transformation matrix M to an array of 2D points.
+
+        Parameters
+        ----------
+        M   : NDArray  shape (3, 3)
+        pts : NDArray  shape (N, 2)
+
+        Returns
+        -------
+        projected : NDArray  shape (N, 2)
+        """
+        n = pts.shape[0]
+        pts = np.hstack([pts, np.ones((n, 1), dtype=np.float64)])
+        pts_projected = pts @ M.T
+        return pts_projected[:, :2]
