@@ -1,69 +1,109 @@
-\section{Mathematical Foundations}
+\section{Mathematical Foundations}\label{sec:math_foundations}
 
-\subsection{Problem Fomulation}
+\subsection{Problem Formulation}\label{subsec:problem_formulation}
+Assuming we are given a set of keypoints corresponding to the same physical points in both images, the localization task requires establishing a mathematical mapping between the UAV's local perspective and the global reference map. We define the following variables:
+
+\begin{itemize}
+    \item $\mathbf{p}_i^{uav} = [x_i, y_i, 1]^T$: A homogeneous keypoint in the UAV-image coordinate system. ($1$ as the third coordinate is used since at the current moment we are considering only similarity and affine transformations)
+    \item $x_i, y_i$: The pixel coordinates of a feature in the UAV camera feed.
+    \item $\mathbf{p}_i^{map} = [X_i, Y_i, 1]^T$: The corresponding homogeneous keypoint in the map-image coordinate system.
+    \item $X_i, Y_i$: The pixel coordinates of the matching feature on the satellite map.
+    \item $n$: The total number of matched keypoint pairs.
+    \item $T$: The transformation matrix mapping the UAV coordinates to the map coordinates.
+\end{itemize}
+
+Given the set of $n$ matched pairs, the fundamental goal is to find the matrix $T$ such that:
+\begin{equation}
+\mathbf{p}_i^{map} \approx T\mathbf{p}_i^{uav}.
+\end{equation}
+
+The problem is posed as an optimization task. The objective is to estimate the optimal transformation matrix $\hat{T}$ that minimizes the reprojection error across all $N$ correspondences:
+\begin{equation}
+\hat{T} = \arg\min_T \sum_{i=1}^{n} \left\|\mathbf{p}_i^{map} - T\mathbf{p}_i^{uav}\right\|^2.
+\end{equation}
+
+\subsection{Scale-Invariant Feature Detection}\label{subsec:feature_detection}
 % TODO: write content
 
-\subsection{Scale-Invariant Feature Detection}
+\subsection{Robust Estimation via RANSAC}\label{subsec:ransac}
 % TODO: write content
 
-\subsection{Robust Estimation via RANSAC}
-% TODO: write content
-
-\subsection{Geometric Transformation Models}
+\subsection{Geometric Transformation Models}\label{subsec:transformation_models}
 Geometric transformations define the mathematical mapping between UAV imagery and the reference map. We consider three linear models:
 
 \begin{itemize}
-	\item \textbf{Similarity Transformation:} A 4-degree-of-freedom model accounting for translation, rotation, and uniform scaling.
-	\item \textbf{Affine Transformation:} A 6-degree-of-freedom model extending similarity by adding shear and non-uniform scaling.
-	\item \textbf{Projective:} An 8-degree-of-freedom model representing the true 3D to 2D projection.
+    \item \textbf{Similarity Transformation:} A 4-degree-of-freedom model accounting for translation, rotation, and uniform scaling.
+    \item \textbf{Affine Transformation:} A 6-degree-of-freedom model extending similarity by adding shear and non-uniform scaling.
+    \item \textbf{Projective Transformation:} An 8-degree-of-freedom model representing the true 3D to 2D projection.
 \end{itemize}
 
 The Similarity model requires perfectly level flight and uniform zooming, failing with axial stretching or tilt. The Affine model approximates slight perspective shifts via shear, but only the Projective model handles significant pitch and roll by modeling converging parallel lines.
 
-We chose the Affine model because it flexibly handles non-ideal conditions (slight tilt or shearing) while remaining mathematically simpler and more stable than the Projective model.
+At the current stage, we estimate transformations using the Similarity and Affine models.
 
-For the selected Affine model, the mapping between UAV coordinates $(x, y)$ and map coordinates $(X, Y)$ is:
+The Similarity model is written as:
+\begin{equation}
+\begin{bmatrix} X \\ Y \\ 1 \end{bmatrix} =
+\begin{bmatrix}
+a & -b & t_x \\
+b &  a & t_y \\
+0 &  0 & 1
+\end{bmatrix}
+\begin{bmatrix} x \\ y \\ 1 \end{bmatrix},
+\end{equation}
+where $a = s\cos\theta$ and $b = s\sin\theta$.
+
+For one correspondence $(x_i, y_i) \leftrightarrow (X_i, Y_i)$, this yields the linear equations
+\begin{equation}
+X_i = ax_i - by_i + t_x, \quad Y_i = bx_i + ay_i + t_y,
+\end{equation}
+which are stacked over all inliers into an overdetermined system:
+\begin{equation}
+\begin{bmatrix}
+x_1 & -y_1 & 1 & 0 \\
+y_1 &  x_1 & 0 & 1 \\
+\vdots & \vdots & \vdots & \vdots \\
+x_n & -y_n & 1 & 0 \\
+y_n &  x_n & 0 & 1
+\end{bmatrix}
+\begin{bmatrix} a \\ b \\ t_x \\ t_y \end{bmatrix}
+=
+\begin{bmatrix} X_1 \\ Y_1 \\ \vdots \\ X_n \\ Y_n \end{bmatrix}.
+\end{equation}
+
+The Affine model uses the same construction principle (stacking two linear equations per correspondence), but with six unknowns and matrix form:
 \begin{equation}
 \begin{bmatrix} X \\ Y \\ 1 \end{bmatrix} =
 \begin{bmatrix} a_1 & a_2 & t_x \\ a_3 & a_4 & t_y \\ 0 & 0 & 1 \end{bmatrix}
 \begin{bmatrix} x \\ y \\ 1 \end{bmatrix}
 \end{equation}
 
-During robust fitting, candidate transformations are scored by reprojection error for each correspondence:
+\subsection{Least-Squares Parameter Estimation}\label{subsec:least_squares}
+Both Similarity and Affine models produce overdetermined linear systems of the form $A\mathbf{v}=\mathbf{b}$ with $2N$ equations. Because $\mathbf{b}$ rarely lies exactly within the column space of $A$, denoted $C(A)$, an exact solution is unlikely. Instead, the optimal estimate $\hat{\mathbf{v}}$ minimizes the residual error $\mathbf{r} = \mathbf{b} - A\mathbf{v}$. Geometrically, this requires finding the vector $A\hat{\mathbf{v}}$ in $C(A)$ that is closest to $\mathbf{b}$, which is its orthogonal projection.
+
+For $A\hat{\mathbf{v}}$ to be the precise orthogonal projection, the residual vector $\mathbf{r}$ must be strictly orthogonal to the entire column space of $A$. Consequently, the dot product of the residual with every column of $A$ must equal zero.
 \begin{equation}
-d = \sqrt{(X_i - \hat{X}_i)^2 + (Y_i - \hat{Y}_i)^2} < \epsilon
+A^T \mathbf{r} = \mathbf{0}.
 \end{equation}
 
-Given the final set of $n$ inliers, parameters are re-estimated from the overdetermined linear system $A\mathbf{v} = \mathbf{b}$ with $\mathbf{v} = [a_1, a_2, t_x, a_3, a_4, t_y]^T$:
+Substituting the definition of the residual, $\mathbf{r} = \mathbf{b} - A\hat{\mathbf{v}}$, into this orthogonality condition yields:
 \begin{equation}
-\begin{bmatrix}
-x_1 & y_1 & 1 & 0 & 0 & 0 \\
-0 & 0 & 0 & x_1 & y_1 & 1 \\
-\vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
-x_n & y_n & 1 & 0 & 0 & 0 \\
-0 & 0 & 0 & x_n & y_n & 1
-\end{bmatrix}
-\begin{bmatrix} a_1 \\ a_2 \\ t_x \\ a_3 \\ a_4 \\ t_y \end{bmatrix} =
-\begin{bmatrix} X_1 \\ Y_1 \\ \vdots \\ X_n \\ Y_n \end{bmatrix}
+A^T (\mathbf{b} - A\hat{\mathbf{v}}) = \mathbf{0}.
 \end{equation}
 
-\subsection{Least-Squares Parameter Estimation}
-The optimal solution $\mathbf{v}_{final}$ is the one that minimizes the sum of squared residuals, defined by the cost function $J(\mathbf{v})$:
+Distributing $A^T$ across the terms gives:
 \begin{equation}
-J(\mathbf{v}) = \|A\mathbf{v} - \mathbf{b}\|^2 = (A\mathbf{v} - \mathbf{b})^T(A\mathbf{v} - \mathbf{b})
+A^T \mathbf{b} - A^T A \hat{\mathbf{v}} = \mathbf{0}.
 \end{equation}
 
-Expanding the terms, we obtain:
+Rearranging this equality results in the fundamental normal equations:
 \begin{equation}
-J(\mathbf{v}) = \mathbf{v}^T A^T A \mathbf{v} - 2\mathbf{b}^T A \mathbf{v} + \mathbf{b}^T \mathbf{b}
+A^T A \hat{\mathbf{v}} = A^T \mathbf{b}.
 \end{equation}
 
-To find the minimum, we compute the derivative with respect to $\mathbf{v}$ and set it to zero:
+Assuming the columns of $A$ are linearly independent, the square symmetric matrix $A^T A$ is invertible. Geometrically, this independence is guaranteed as long as there are at least three non-collinear matched points, a condition easily satisfied by the vast number of dispersed keypoints typically extracted from the images. Multiplying both sides by its inverse provides the final closed-form estimator:
 \begin{equation}
-\frac{\partial J(\mathbf{v})}{\partial \mathbf{v}} = 2A^T A \mathbf{v} - 2A^T \mathbf{b} = 0
+\hat{\mathbf{v}} = (A^T A)^{-1}A^T \mathbf{b}.
 \end{equation}
 
-Solving this linear equation yields the final parameter vector:
-\begin{equation}
-A^T A \mathbf{v} = A^T \mathbf{b} \implies \mathbf{v}_{final} = (A^T A)^{-1} A^T \mathbf{b}
-\end{equation}
+This geometrical formulation is entirely model-agnostic: only the structure of $A$ and the length of $\mathbf{v}$ change between the Similarity and Affine models.
