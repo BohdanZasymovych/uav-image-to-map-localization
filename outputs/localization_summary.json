@@ -1,6 +1,6 @@
 {
   "map_path": "data/satellite-images/satellite01.tif",
-  "uav_path": "synthetic_dataset/uav_frames/frame_0040.png",
+  "uav_path": "data/datasets/synthetic-dataset-satellite01/uav_frames/frame_0040.png",
   "config_path": "configs/default.yaml",
   "extractor": "SIFTExtractor",
   "model": "AffineModel",
@@ -18,7 +18,7 @@
     "n_raw_matches": 478,
     "n_inliers": 471,
     "ransac_iterations": 2,
-    "runtime_s": 1.0448552500001824,
+    "runtime_s": 1.1345796629998404,
     "transform_matrix": [
       [
         1.2864820456557178,
