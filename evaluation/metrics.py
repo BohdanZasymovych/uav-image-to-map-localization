@@ -38,6 +38,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 
 import numpy as np
 from numpy.typing import NDArray
@@ -70,13 +71,25 @@ class Evaluator:
 
     def run(self, n_frames: int) -> EvaluationReport:
         frames = self.generator.generate(n_frames)
+        logger = logging.getLogger(__name__)
 
         errors: list[float] = []
         runtimes: list[float] = []
         inlier_ratios: list[float] = []
+        n_failed = 0
 
-        for frame in frames:
-            _, result = self.pipeline.run(frame.uav_img, self.map_img)
+        for i, frame in enumerate(frames):
+            try:
+                _, result = self.pipeline.run(frame.uav_img, self.map_img)
+            except Exception as exc:
+                n_failed += 1
+                logger.warning(
+                    "Skipping frame %d/%d due to pipeline error: %s",
+                    i + 1,
+                    len(frames),
+                    exc,
+                )
+                continue
 
             error_i = float(np.linalg.norm(result.position_px - frame.ground_truth_px))
             errors.append(error_i)
@@ -102,6 +115,13 @@ class Evaluator:
             std_runtime_s = float(np.std(runtimes_arr))
             mean_inlier_ratio = float(np.mean(inlier_arr))
 
+        if n_failed > 0:
+            logger.warning(
+                "Evaluation completed with skipped frames: success=%d failed=%d",
+                int(per_frame_errors.size),
+                n_failed,
+            )
+
         return EvaluationReport(
             rmse=rmse,
             per_frame_errors=per_frame_errors,
@@ -109,5 +129,5 @@ class Evaluator:
             mean_runtime_s=mean_runtime_s,
             std_runtime_s=std_runtime_s,
             mean_inlier_ratio=mean_inlier_ratio,
-            n_frames=len(frames),
+            n_frames=int(per_frame_errors.size),
         )
