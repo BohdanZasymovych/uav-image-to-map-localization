@@ -1,0 +1,17 @@
+\section{Future Plans and Risk Analysis}
+Remaining work to complete the prototype is divided into three phases over six weeks:
+
+\subsection{Future Plans}\label{subsec:future_plans}
+Future work will focus on the following objectives:
+
+\begin{itemize}
+    \item \textbf{Projective Transformation:} Implement the 8-DoF Projective model to better handle real-world perspective distortions, pitch, and roll.
+    \item \textbf{Model Comparison:} Evaluate and compare the accuracy and computational efficiency of the Similarity, Affine, and Projective models.
+    \item \textbf{Real-World Evaluation:} Validate the pipeline's robustness using the real-world \href{https://github.com/deepscenario/OrthoLoC}{OrthoLoC dataset} rather than synthetic data.
+    \item \textbf{GUI Development:} Create a Graphical User Interface (GUI) to streamline configuration and improve the visualization of results.
+\end{itemize}
+
+\subsection{Risk Analysis}\label{subsec:risk_analysis}
+A primary project risk is the potential degradation of model performance when transitioning to real-world evaluation. Although our pipeline has achieved sufficient localization accuracy on the synthetic dataset, real UAV flight data introduces unpredictable variables such as complex lighting, weather conditions, and extreme perspective distortions. 
+
+While the current implementation is theoretically sound, it may lack the necessary robustness for unconstrained environments, which could result in high localization errors. If the algorithm underperforms on real-world data, we will reassess our methodology and explore alternative approaches. Potential mitigation strategies include evaluating more robust feature extraction algorithms or upgrading to a Projective transformation model to better handle non-parallel camera angles and significant pitch and roll.
