@@ -8,7 +8,7 @@ A single-image localization test was executed using the Affine transformation mo
 \begin{itemize}
     \item \textbf{Raw matches:} 478
     \item \textbf{Inliers after RANSAC:} 471
-    \item \textbf{Runtime (without match rendering):} 1.045 s
+    \item \textbf{Runtime (without image rendering):} 1.045 s
     \item \textbf{Estimated map position:} $(179.99, 866.84)$ px
 \end{itemize}
 
@@ -16,7 +16,7 @@ The pipeline generated the following visual artifacts to verify the matching and
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\columnwidth]{figs/matches_after_ransac.png}
+    \includegraphics[width=0.98\columnwidth]{figs/matches_after_ransac.png}
     \caption{Geometrically consistent inlier matches retained after applying the RANSAC algorithm.}
     \label{fig:matches_after_ransac}
 \end{figure}

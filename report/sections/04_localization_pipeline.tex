@@ -1,57 +1,19 @@
 \section{Localization Pipeline}
 
-% -----------------------------------------------------------------------------
-% 4.1 Feature Extraction and Matching
-% -----------------------------------------------------------------------------
-% WRITE: Describe the two-step process: (1) SIFT keypoint detection and
-% descriptor computation on both images, (2) nearest-neighbour descriptor
-% matching filtered by Lowe's ratio test. State the parameter choices:
-% ratio threshold = 0.75, and justify it briefly. Specify the input to this
-% stage (two BGR images) and the output (two arrays src_pts and dst_pts of
-% shape (N, 2) — matched pixel coordinates in UAV and map space respectively).
-% Do NOT re-derive SIFT math — cite Section III-A. Keep to one paragraph.
-% -----------------------------------------------------------------------------
-\subsection{Feature Extraction and Matching}
-The feature extraction module accepts two raw BGR images (the UAV camera feed and the reference satellite map) as input, explicitly converting them to grayscale prior to processing. First, SIFT keypoints and descriptors are computed for both images. Second, to bypass the $O(N \cdot M)$ computational bottleneck of Brute-Force matching, we implement the Fast Library for Approximate Nearest Neighbors (FLANN). By structuring the satellite map descriptors into a randomized KD-tree forest (configured with 5 trees and 50 search checks), the matching complexity is reduced to $O(N \log M)$, enabling rapid nearest-neighbor retrieval. These initial matches are subsequently filtered using Lowe's ratio test (as defined in Section III-B) with a threshold of $\tau = 0.75$. This specific threshold is chosen to eliminate the vast majority of ambiguous matches caused by repetitive textures while retaining a sufficient number of high-quality geometric anchors. The final output of this stage consists of two corresponding arrays, \texttt{src\_pts} and \texttt{dst\_pts}, each of shape $(N, 2)$, which represent the matched pixel coordinates in the UAV and map coordinate spaces, respectively.
 
-% -----------------------------------------------------------------------------
-% 4.2 RANSAC Configuration
-% -----------------------------------------------------------------------------
-% WRITE: State the specific parameter values chosen: epsilon (inlier threshold
-% in pixels), confidence p, and max_iterations. Justify each value — what
-% happens if epsilon is too tight or too loose, what confidence level is
-% appropriate for this task. Then explain how min_points differs between
-% the two models (affine: 3, similarity: 2) and what consequence this has
-% for convergence speed using the iteration count formula from Section III-B.
-% Clearly state the output of this stage: a boolean inlier mask over the
-% matched point pairs, which is passed to Section IV-C. Do NOT describe
-% matrix assembly here — that belongs in IV-C. Cite Section III-B for all
-% math. Keep to one paragraph.
-% -----------------------------------------------------------------------------
+\subsection{Feature Extraction and Matching}
+The feature extraction module accepts two raw BGR images (the UAV camera feed and the reference satellite map) as input, explicitly converting them to grayscale prior to processing. First, SIFT keypoints and descriptors are computed for both images. Second, to bypass the $O(N \cdot M)$ computational bottleneck of Brute-Force matching, we implement the Fast Library for Approximate Nearest Neighbors (FLANN). By structuring the satellite map descriptors into a randomized KD-tree forest (configured with 5 trees and 50 search checks), the matching complexity is reduced to $O(N \log M)$, enabling rapid nearest-neighbor retrieval. These initial matches are subsequently filtered using Lowe's ratio test (as defined in \autoref{subsec:feature_detection}) with a threshold of $\tau = 0.75$. This specific threshold is chosen to eliminate the vast majority of ambiguous matches caused by repetitive textures while retaining a sufficient number of high-quality geometric anchors. The final output of this stage consists of two corresponding arrays, \texttt{src\_pts} and \texttt{dst\_pts}, each of shape $(N, 2)$, which represent the matched pixel coordinates in the UAV and map coordinate spaces, respectively.
+
 
 \subsection{RANSAC Configuration}
 
-The RANSAC algorithm is applied to the set of matched feature correspondences to robustly estimate the transformation by filtering out outliers within the overall pipeline. We use an inlier threshold $\epsilon = 3$ pixels, meaning that a correspondence is considered consistent with the model if its reprojection error is below this value, as defined in Section~III-B; smaller values may reject valid matches due to noise, while larger values may include outliers and degrade accuracy. The confidence parameter is set to $p = 0.99$, ensuring a high probability of sampling at least one all-inlier subset according to the probabilistic model described in Section~III-B, while the number of iterations is capped at $2000$ to limit computation time in worst-case scenarios. The minimal sample size for the affine transformation model is $s = 3$, which directly affects the required number of iterations $k$ as given in Section~III-B; larger minimal sets lead to slower convergence but allow modeling more complex transformations. The output of this stage is a boolean inlier mask over all correspondences, identifying geometrically consistent matches.
-% from the RANSAC inlier subset — NOT the derivation of why normal equations
-% work (that is in Section III-D, cite it). Show equation (3): the explicit
-% block structure of matrix A (shape 2N x 6 for affine, 2N x 4 for
-% similarity) and vector b (shape 2N), populated from the inlier point pairs.
-% Then show how the recovered parameter vector v is assembled back into the
-% 3x3 matrix M for each model. State the output: matrix M passed to IV-D.
-% Do NOT describe inlier selection here — that is IV-B.
-% -----------------------------------------------------------------------------
+The RANSAC algorithm is applied to the set of matched feature correspondences to robustly estimate the transformation by filtering out outliers within the overall pipeline. We use an inlier threshold $\epsilon = 3$ pixels, meaning that a correspondence is considered consistent with the model if its reprojection error is below this value, as defined in \autoref{subsec:ransac}; smaller values may reject valid matches due to noise, while larger values may include outliers and degrade accuracy. The confidence parameter is set to $p = 0.99$, ensuring a high probability of sampling at least one all-inlier subset according to the probabilistic model described in \autoref{subsec:ransac}, while the number of iterations is capped at $2000$ to limit computation time in worst-case scenarios. The minimal sample size for the affine transformation model is $s = 3$, which directly affects the required number of iterations $k$ as given in \autoref{subsec:ransac}; larger minimal sets lead to slower convergence but allow modeling more complex transformations. The output of this stage is a boolean inlier mask over all correspondences, identifying geometrically consistent matches.
+
+
 \subsection{Transformation Estimation}
 This stage uses the inlier mask returned by RANSAC and discards all rejected correspondences. For the selected model (Similarity or Affine), the pipeline instantiates the appropriate linear system template defined in \autoref{subsec:transformation_models}, solves it with the least-squares method from \autoref{subsec:least_squares}, and converts the recovered parameter vector into a $3 \times 3$ matrix $M$. The output of this stage is only the estimated matrix $M$, which is consumed by the coordinate projection step.
 
-% -----------------------------------------------------------------------------
-% 4.4 Coordinate Projection
-% -----------------------------------------------------------------------------
-% WRITE: Explain that the estimated matrix M is applied to the UAV image
-% center expressed in homogeneous coordinates: [W/2, H/2, 1]^T. Show the
-% matrix-vector product explicitly for similarity/affine models.
-% Keep this subsection in map-pixel coordinates only.
-% Keep to one short paragraph plus equations.
-% -----------------------------------------------------------------------------
+
 \subsection{Coordinate Projection}
 The estimated matrix $M$ is applied to the UAV-image center in homogeneous coordinates, where $W$ and $H$ are image width and height:
 \begin{equation}
@@ -76,9 +38,7 @@ H/2 \\
 (X_{map}, Y_{map}) = (\tilde{X}, \tilde{Y}).
 \end{equation}
 
-% -----------------------------------------------------------------------------
-% 4.5 Complete Pipeline
-% -----------------------------------------------------------------------------
+
 \subsection{Complete Pipeline}
 
 \begin{algorithm}[H]
