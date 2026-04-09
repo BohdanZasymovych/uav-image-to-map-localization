@@ -65,16 +65,25 @@ Evaluation plots:
 
 ## Project Structure
 
-- `localization/` contains the core computer-vision localization logic: feature extraction/matching, transformation models, model-agnostic RANSAC, and the main pipeline that outputs UAV map coordinates.
-- `evaluation/` contains synthetic data generation and benchmarking utilities: frame generation, metric computation (RMSE, runtime, inlier ratio), and plot creation.
-- `app/app_cli/` is the production command-line app for one map/UAV pair. It handles arguments, configuration loading, pipeline execution, rendering of overlays, and JSON summary export.
-- `app/app_ui/` provides the Streamlit UI for interactive experiments and quick visual checks.
+- `localization/` contains the full localization stack.
+  - `features/`: feature extractor interface and implementations (SIFT/ORB/SURF).
+  - `transforms/`: geometric models (Similarity, Affine, Projective) and base model API.
+  - `ransac.py`: model-agnostic robust estimator for inlier selection and transform fitting.
+  - `pipeline.py`: end-to-end localization flow from matching to UAV center projection.
+  - `georeferencing.py`, `result.py`: coordinate conversion helpers and output data structures.
+- `evaluation/` contains the benchmarking workflow around the localization pipeline.
+  - `dataset.py`: synthetic UAV frame generation with known ground-truth map positions.
+  - `metrics.py`: evaluation runner and aggregate metrics (RMSE, runtime, inlier ratio).
+  - `visualizer.py`: plot generation and summary export for evaluation outputs.
+  - `base.py`: shared evaluation interfaces.
+- `app/app_cli/` is the production command-line app for one map/UAV pair.
+- `app/app_ui/` provides the Streamlit UI for interactive experiments and quick visual checks (Not implemented yet).
 - `configs/default.yaml` is the central runtime configuration for extractor/model selection and RANSAC/evaluation parameters.
 - `data/` stores reference map images and prepared synthetic datasets used for experiments.
-- `generate_and_evaluate.py` is the end-to-end script to generate synthetic samples and evaluate localization in one run.
-- `report/` contains the written project report and figure assets used for documentation.
+- `generate_and_evaluate.py` is the orchestration script that builds the pipeline from config, generates synthetic frames, runs evaluation, and saves plots/summary outputs.
+- `report/main.tex` contains the written project report.
 
-## Installation
+## Dependencies
 
 ```bash
 python -m venv .venv
