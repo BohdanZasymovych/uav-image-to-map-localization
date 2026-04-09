@@ -1,24 +1,3 @@
-# =============================================================================
-# evaluation/base.py
-# -----------------------------------------------------------------------------
-# OWNER: Person C.
-#
-# PURPOSE:
-#   Abstract base class for dataset generators and the SyntheticFrame
-#   dataclass that carries a single test sample.
-#   The Evaluator depends on DatasetGenerator — not on any concrete generator.
-#   This allows a RealFlightDatasetLoader to be added later without any
-#   changes to evaluation code.
-#
-# CONTAINS:
-#   - SyntheticFrame   : dataclass with uav_img, ground_truth_px, transform_matrix.
-#   - DatasetGenerator : ABC with a single abstract method generate(n).
-#
-# CONSUMED BY:
-#   evaluation/dataset.py  — SyntheticDatasetGenerator implements DatasetGenerator.
-#   evaluation/metrics.py  — Evaluator depends on DatasetGenerator interface.
-# =============================================================================
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

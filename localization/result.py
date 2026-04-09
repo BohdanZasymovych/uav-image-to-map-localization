@@ -1,28 +1,3 @@
-# =============================================================================
-# localization/result.py
-# -----------------------------------------------------------------------------
-# OWNER: defined collaboratively at project start; imported by everyone.
-#
-# PURPOSE:
-#   Shared data containers (dataclasses) that flow between pipeline stages.
-#   No logic lives here — only typed fields.
-#
-# CONTAINS:
-#   - MatchResult       : output of the feature-matching stage (before RANSAC).
-#   - LocalizationResult: final output of a full pipeline run.
-#
-# DEPENDENCIES:
-#   numpy only. Must not import anything from this project.
-#
-# CONSUMED BY:
-#   localization/pipeline.py  — produces both dataclasses.
-#   evaluation/metrics.py     — reads LocalizationResult for RMSE/timing.
-#   evaluation/visualizer.py  — reads MatchResult.match_image for plots.
-#   app/ui.py                 — displays all fields to the user.
-#
-# DO NOT ADD any methods or business logic to these dataclasses.
-# =============================================================================
-
 from __future__ import annotations
 
 from dataclasses import dataclass

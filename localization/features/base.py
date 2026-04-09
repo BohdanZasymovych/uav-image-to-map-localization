@@ -1,34 +1,3 @@
-# =============================================================================
-# localization/features/base.py
-# -----------------------------------------------------------------------------
-# OWNER: Person B.
-#
-# PURPOSE:
-#   Abstract base class for all feature extractor implementations.
-#   RANSAC and the pipeline depend on this interface; they must never import
-#   a concrete extractor directly.
-#
-# CONTAINS:
-#   - FeatureExtractor (ABC)
-#       detect_and_compute(img) -> (keypoints, descriptors)
-#       match(desc1, desc2)     -> list[cv2.DMatch]
-#
-# IMPLEMENTATIONS (each in its own file, same package):
-#   localization/features/sift.py  — SIFTExtractor  (cv2.NORM_L2)
-#   localization/features/orb.py   — ORBExtractor   (cv2.NORM_HAMMING)
-#   localization/features/surf.py  — SURFExtractor  (cv2.NORM_L2)
-#
-# IMPLEMENTATION NOTES:
-#   - Each implementation must handle grayscale conversion internally.
-#   - match() must encapsulate ratio-test or cross-check filtering;
-#     callers receive only good matches.
-#   - The choice of distance norm (L2 vs Hamming) is an implementation
-#     detail hidden from callers.
-#
-# CONSUMED BY:
-#   localization/pipeline.py — calls detect_and_compute() and match().
-# =============================================================================
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
