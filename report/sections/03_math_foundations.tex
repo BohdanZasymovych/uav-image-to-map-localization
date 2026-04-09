@@ -152,14 +152,14 @@ k = \frac{\log(1 - p)}{\log(1 - w^s)}.
 Geometric transformations define the mathematical mapping between UAV imagery and the reference map. We consider three linear models:
 
 \begin{itemize}
-    \item \textbf{Similarity Transformation:} A 4-degree-of-freedom model accounting for translation, rotation, and uniform scaling.
-    \item \textbf{Affine Transformation:} A 6-degree-of-freedom model extending similarity by adding shear and non-uniform scaling.
-    \item \textbf{Projective Transformation:} An 8-degree-of-freedom model representing the true 3D to 2D projection.
+    \item \textbf{Similarity Transformation:} A 4-degree-of-freedom model accounting for translation, rotation, and uniform scaling. It is most reliable when the UAV maintains nearly level flight (small roll/pitch), with the camera pointing directly downward.
+
+    \item \textbf{Affine Transformation:} A 6-degree-of-freedom model extending similarity by adding shear and non-uniform scaling. The addition of shear and non-uniform scaling enables it to tolerate moderate changes in the camera viewing angle.
+
+    \item \textbf{Projective Transformation:} An 8-degree-of-freedom model representing the full planar perspective mapping. It is best for general applications and works in scenarios where the camera angle can significantly change.
 \end{itemize}
 
-The Similarity model requires perfectly level flight and uniform zooming, failing with axial stretching or tilt. The Affine model approximates slight perspective shifts via shear, but only the Projective model handles significant pitch and roll by modeling converging parallel lines.
-
-At the current stage, we estimate transformations using the Similarity and Affine models.
+In the current stage of the project, we estimate transformations using the Similarity and Affine models.
 
 The Similarity model is written as:
 \begin{equation}
