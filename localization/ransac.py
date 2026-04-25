@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import logging
 import numpy as np
 from numpy.typing import NDArray
 
 from localization.transforms.base import TransformationModel
 
+logger = logging.getLogger(__name__)
 
 class RANSAC:
     def __init__(
@@ -29,6 +31,8 @@ class RANSAC:
 
         n_total = len(src_pts)
         min_points = self.model.min_points
+
+        logger.debug("RANSAC: Starting with %d correspondences", n_total)
 
         if n_total < min_points:
             raise ValueError(
@@ -68,7 +72,13 @@ class RANSAC:
             if n_inliers > best_inlier_count:
                 best_mask = mask.copy()
                 best_inlier_count = n_inliers
+                old_n_iters = n_iters
                 n_iters = min(self.__adaptive_iters(n_inliers, n_total), self.max_iterations)
+                if n_iters < old_n_iters:
+                    logger.debug("RANSAC iteration %d: found %d inliers, updated max_iters to %d", 
+                                 i, n_inliers, n_iters)
+
+        logger.info("RANSAC found %d inliers in %d iterations", best_inlier_count, iterations_done)
 
         if best_inlier_count < min_points:
             raise RuntimeError("RANSAC failed to find a valid model")
