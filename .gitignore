@@ -213,6 +213,5 @@ pyrightconfig.json
 *.lol
 *.thm
 *.loa
-pip*
 ortholoc/
 .codex
