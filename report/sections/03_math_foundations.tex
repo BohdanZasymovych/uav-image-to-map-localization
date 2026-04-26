@@ -4,7 +4,7 @@
 Assuming we are given a set of keypoints corresponding to the same physical points in both images, the localization task requires establishing a mathematical mapping between the UAV's local perspective and the global reference map. We define the following variables:
 
 \begin{itemize}
-    \item $\mathbf{p}_i^{uav} = [x_i, y_i, 1]^T$: A homogeneous keypoint in the UAV-image coordinate system. ($1$ as the third coordinate is used since at the current moment we are considering only similarity and affine transformations)
+    \item $\mathbf{p}_i^{uav} = [x_i, y_i, 1]^T$: A homogeneous keypoint in the UAV-image coordinate system.
     \item $x_i, y_i$: The pixel coordinates of a feature in the UAV camera feed.
     \item $\mathbf{p}_i^{map} = [X_i, Y_i, 1]^T$: The corresponding homogeneous keypoint in the map-image coordinate system.
     \item $X_i, Y_i$: The pixel coordinates of the matching feature on the satellite map.
@@ -92,7 +92,7 @@ At each iteration, a minimal subset of $s$ correspondences is sampled:
 \mathcal{S} \subset \mathcal{D}, \quad |\mathcal{S}| = s,
 \]
 where $s$ is the minimum number of correspondences required to estimate
-the chosen transformation model (e.g.\ $s=2$ for similarity, $s=3$ for affine).
+the chosen transformation model (e.g., $s=2$ for Similarity, $s=3$ for Affine, and $s=4$ for Projective).
 Using this subset, a candidate model $\theta$ is estimated by solving
 the linear system defined by the transformation model.
 The model is then evaluated on the full dataset by computing
@@ -159,8 +159,6 @@ Geometric transformations define the mathematical mapping between UAV imagery an
     \item \textbf{Projective Transformation:} An 8-degree-of-freedom model representing the full planar perspective mapping. It is best for general applications and works in scenarios where the camera angle can significantly change.
 \end{itemize}
 
-In the current stage of the project, we estimate transformations using the Similarity and Affine models.
-
 The Similarity model is written as:
 \begin{equation}
 \begin{bmatrix} X \\ Y \\ 1 \end{bmatrix} =
@@ -198,7 +196,26 @@ The Affine model uses the same construction principle (stacking two linear equat
 \begin{bmatrix} x \\ y \\ 1 \end{bmatrix}
 \end{equation}
 
-\subsection{Least-Squares Parameter Estimation}\label{subsec:least_squares}
+The Projective model maps coordinates via a $3 \times 3$ Homography matrix $H$:
+\begin{equation}
+\begin{bmatrix} X' \\ Y' \\ W' \end{bmatrix} =
+\begin{bmatrix}
+h_1 & h_2 & h_3 \\
+h_4 & h_5 & h_6 \\
+h_7 & h_8 & h_9
+\end{bmatrix}
+\begin{bmatrix} x \\ y \\ 1 \end{bmatrix}
+\end{equation}
+To recover the 2D Cartesian coordinates on the map, we perform perspective division by the scaling factor $W'$:
+\begin{equation}
+X = \frac{X'}{W'}, \quad Y = \frac{Y'}{W'}
+\end{equation}
+where $X' = h_1x + h_2y + h_3$, $Y' = h_4x + h_5y + h_6$, and $W' = h_7x + h_8y + h_9$.
+
+
+\subsection{Parameter Estimation Strategies}\label{subsec:parameter_estimation}
+
+\subsubsection{Inhomogeneous Least-Squares (Similarity and Affine)}
 Both Similarity and Affine models produce overdetermined linear systems of the form $A\mathbf{v}=\mathbf{b}$ with $2N$ equations. Because $\mathbf{b}$ rarely lies exactly within the column space of $A$, denoted $C(A)$, an exact solution is unlikely. Instead, the optimal estimate $\hat{\mathbf{v}}$ minimizes the residual error $\mathbf{r} = \mathbf{b} - A\mathbf{v}$. Geometrically, this requires finding the vector $A\hat{\mathbf{v}}$ in $C(A)$ that is closest to $\mathbf{b}$, which is its orthogonal projection.
 
 For $A\hat{\mathbf{v}}$ to be the precise orthogonal projection, the residual vector $\mathbf{r}$ must be strictly orthogonal to the entire column space of $A$. Consequently, the dot product of the residual with every column of $A$ must equal zero.
@@ -226,4 +243,53 @@ Assuming the columns of $A$ are linearly independent, the square symmetric matri
 \hat{\mathbf{v}} = (A^T A)^{-1}A^T \mathbf{b}.
 \end{equation}
 
-This geometrical formulation is entirely model-agnostic: only the structure of $A$ and the length of $\mathbf{v}$ change between the Similarity and Affine models.
+\subsubsection{Direct Linear Transformation and SVD (Projective)}
+Unlike the linear models, the Projective transformation involves a perspective division, making the system inhomogeneous. To linearize the estimation, we apply the Direct Linear Transformation (DLT). By multiplying the Cartesian equations by the scale factor $W'$, we obtain:
+\begin{equation}
+X_i(h_7x_i + h_8y_i + h_9) = h_1x_i + h_2y_i + h_3,
+\end{equation}
+\begin{equation}
+Y_i(h_7x_i + h_8y_i + h_9) = h_4x_i + h_5y_i + h_6.
+\end{equation}
+Rearranging these terms sets the equations to zero. For $n$ correspondences, stacking these two equations per point yields an overdetermined homogeneous system:
+\begin{equation}
+A\mathbf{h} = \mathbf{0},
+\end{equation}
+where $A$ is a $2n \times 9$ matrix and $\mathbf{h} = [h_1, h_2, \dots, h_9]^T$. 
+
+To prevent the trivial solution $\mathbf{h} = \mathbf{0}$, we enforce the unit length constraint $\|\mathbf{h}\| = 1$. The goal is to minimize the squared algebraic error:
+\begin{equation}
+J(\mathbf{h}) = \|A\mathbf{h}\|^2.
+\end{equation}
+
+To solve this directly, we apply the Singular Value Decomposition (SVD) to the matrix $A$, such that $A = U\Sigma V^T$, where $U$ and $V$ are orthogonal matrices, and $\Sigma$ is a diagonal matrix containing the singular values sorted in descending order ($\sigma_1 \ge \sigma_2 \ge \dots \ge \sigma_9 \ge 0$). 
+
+Substituting the SVD factorization into our error function yields:
+\begin{equation}
+J(\mathbf{h}) = \|U\Sigma V^T \mathbf{h}\|^2.
+\end{equation}
+
+Because $U$ is an orthogonal matrix, multiplying a vector by it acts only as a spatial rotation, completely preserving the Euclidean length of the vector (i.e., $\|U\mathbf{x}\| = \|\mathbf{x}\|$). Therefore, we can drop $U$ from the equation without affecting the norm:
+\begin{equation}
+J(\mathbf{h}) = \|\Sigma V^T \mathbf{h}\|^2.
+\end{equation}
+
+We now define a new parameter vector $\mathbf{y} = V^T \mathbf{h}$. Since $V^T$ is also an orthogonal matrix, it preserves the length of $\mathbf{h}$. Given our initial constraint that $\|\mathbf{h}\| = 1$, it strictly follows that $\|\mathbf{y}\| = 1$. Our optimization objective simplifies to:
+\begin{equation}
+J(\mathbf{y}) = \|\Sigma \mathbf{y}\|^2.
+\end{equation}
+
+Expanding the squared norm of a diagonal matrix multiplied by a vector results in a simple weighted sum:
+\begin{equation}
+J(\mathbf{y}) = \sum_{i=1}^{9} \sigma_i^2 y_i^2.
+\end{equation}
+
+Since $\sum y_i^2 = 1$, we must distribute exactly one unit of weight across the squared singular values. To minimize the total sum, we must assign all the weight to the smallest singular value, $\sigma_9$. Thus, the optimal transformed vector is:
+\begin{equation}
+\mathbf{y} = [0, 0, \dots, 0, 1]^T.
+\end{equation}
+
+To recover our original parameter vector $\mathbf{h}$, we reverse the substitution to obtain $\mathbf{h} = V\mathbf{y}$. Multiplying the matrix $V$ by a vector of zeros ending in a 1 isolates and extracts the very last column of $V$. Therefore, the optimal parameter vector $\hat{\mathbf{h}}$ is exactly $\mathbf{v}_9$, the right singular vector corresponding to the smallest singular value of $A$.
+
+\subsubsection{Data Normalization}
+To ensure numerical stability during SVD computation, the raw pixel coordinates must be preconditioned using Hartley's normalization. The points from both images are translated so their respective centroids are at the origin $(0,0)$, and scaled so their mean distance from the origin is $\sqrt{2}$. This prevents the matrix $A$ from becoming severely ill-conditioned due to vast magnitude differences between raw coordinate terms (e.g., $x_i$) and multiplicative terms (e.g., $X_i x_i$). After solving the DLT for the normalized homography $\tilde{H}$, the final projective matrix $H$ is recovered by mathematically reversing the translation and scaling transformations.
