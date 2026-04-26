@@ -1,5 +1,5 @@
-import logging
 import streamlit as st
+import logging
 from typing import List
 
 class StreamlitLogHandler(logging.Handler):
@@ -25,4 +25,4 @@ class LoggerWidget:
             
             # Use a container for logs
             log_text = "\n".join(st.session_state.logs)
-            st.text_area("Log Output", value=log_text, height=300, disabled=True)
+            st.text_area("Log Output", value=log_text, height=300, disabled=True, label_visibility="collapsed")
