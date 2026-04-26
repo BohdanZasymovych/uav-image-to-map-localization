@@ -139,11 +139,10 @@ def __build_pipeline(config: dict[str, Any]) -> LocalizationPipeline:
 def main() -> int:
     args = __build_parser().parse_args()
 
-    logging.basicConfig(
-        level=getattr(logging, str(args.log_level).upper()),
-        format="%(asctime)s | %(levelname)-8s | %(message)s",
-    )
+    from app.app_cli.logging_utils import LoggingConfigurator
+    LoggingConfigurator.configure(log_level=str(args.log_level))
     logger = logging.getLogger("generate_and_evaluate")
+
 
     map_path = __resolve_path(str(args.map))
     config_path = __resolve_path(str(args.config))

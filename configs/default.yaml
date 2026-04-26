@@ -5,14 +5,6 @@ sift:
   n_features: 0         # 0 = unlimited
   ratio: 0.75
 
-orb:
-  n_features: 500
-  ratio: 0.75
-
-surf:
-  hessian_threshold: 400
-  ratio: 0.75
-
 ransac:
   epsilon: 3.0
   confidence: 0.99
