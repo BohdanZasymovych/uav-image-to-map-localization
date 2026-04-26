@@ -39,8 +39,8 @@ class LocalizationPipeline:
         self,
         uav_img: NDArray,
         map_img: NDArray,
-        visualize: bool = False,
-    ) -> tuple[MatchResult, LocalizationResult]:
+        visualize: bool = True,
+    ) -> tuple[MatchResult | None, LocalizationResult]:
         logger.info("Starting localization pipeline run")
         time_start = perf_counter()
 
@@ -76,12 +76,11 @@ class LocalizationPipeline:
         logger.info("Estimated pixel position: %s", position_px)
 
         time_end = perf_counter()
-
         execution_time = time_end - time_start
 
         match_result = None
-        
         if visualize:
+            # Generate visualizations for CLI/UI consumption
             raw_match_image = cv2.drawMatches(
                 uav_img, uav_keypoints, map_img, map_keypoints, matches, None,
                 flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
@@ -108,7 +107,7 @@ class LocalizationPipeline:
             inlier_mask=best_inlier_mask,
             position_px=position_px,
             n_raw_matches=len(matches),
-            n_inliers=int(np.count_nonzero(best_inlier_mask)),
+            n_inliers=n_inliers,
             ransac_iterations=iterations_done,
             runtime_s=execution_time,
         )

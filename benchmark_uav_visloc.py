@@ -49,8 +49,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", required=True, help="Path to save benchmark artifacts")
     parser.add_argument(
         "--models",
-        default="affine,similarity,projective",
-        help="Comma-separated model names (affine, similarity, projective)",
+        default="similarity,affine,projective",
+        help="Comma-separated model names (similarity, affine, projective)",
     )
     parser.add_argument("--max-samples", type=int, default=300, help="Maximum number of frames to benchmark")
     parser.add_argument("--scene-ids", nargs="*", default=None, help="Optional scene ids, e.g. 01 03 11")
@@ -77,6 +77,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--epsilon", type=float, default=3.0, help="RANSAC inlier threshold")
     parser.add_argument("--confidence", type=float, default=0.99, help="RANSAC confidence")
     parser.add_argument("--max-iterations", type=int, default=2000, help="RANSAC max iterations")
+    
     parser.add_argument(
         "--log-level",
         default="INFO",
@@ -184,7 +185,7 @@ def _bounds_from_scene_csv(meta_df: pd.DataFrame) -> Bounds:
     lon_min = float(np.min(lon_vals))
     lon_max = float(np.max(lon_vals))
 
-    if np.isclose(lat_min, lat_max) or np.isclose(lon_min, lon_max):
+    if lat_min == lat_max or lon_min == lon_max:
         raise ValueError("Degenerate latitude/longitude ranges in scene CSV")
 
     return Bounds(lat_min=lat_min, lat_max=lat_max, lon_min=lon_min, lon_max=lon_max)
@@ -444,7 +445,7 @@ def main() -> int:
 
             try:
                 t0 = perf_counter()
-                _, result = pipeline.run(uav_img=uav_img, map_img=map_img)
+                _, result = pipeline.run(uav_img=uav_img, map_img=map_img, visualize=False)
                 elapsed = perf_counter() - t0
 
                 gt = np.array(sample.ground_truth_px, dtype=np.float64)
@@ -483,6 +484,9 @@ def main() -> int:
 
             if i % 25 == 0:
                 logger.info("%s: processed %d/%d", model_name, i, len(samples))
+        
+        # Clear cache after each model to free up massive amounts of RAM
+        map_cache.clear()
 
     result_df = pd.DataFrame(rows)
     per_sample_path = output_dir / "per_sample_results.csv"

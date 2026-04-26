@@ -66,16 +66,16 @@ class LocalizationStreamlitApp:
                     logging.info("Starting pipeline execution")
                     match_result, localization_result = pipeline.run(uav_img=uav_img, map_img=map_img)
                     logging.info("Pipeline execution finished")
-                    
+                    # Render map overlay
                     renderer = MapOverlayRenderer()
                     uav_h, uav_w = uav_img.shape[:2]
                     map_overlay, _, _ = renderer.render(
                         map_img=map_img,
-                        position_px_x=float(localization_result.position_px[0]),
-                        position_px_y=float(localization_result.position_px[1]),
-                        bbox_width=uav_w,
-                        bbox_height=uav_h,
+                        transform_matrix=localization_result.transform_matrix,
+                        uav_width=uav_w,
+                        uav_height=uav_h,
                     )
+
                     
                     st.session_state.last_run = {
                         "match_result": match_result,

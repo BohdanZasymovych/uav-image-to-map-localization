@@ -1,6 +1,7 @@
 import streamlit as st
 import cv2
 import numpy as np
+import logging
 from typing import Optional, Tuple, Any
 
 # Minimalistic SVG Icons
@@ -18,14 +19,16 @@ class MainPanel:
                 uav_file = st.file_uploader("Upload UAV Image", type=["png", "jpg", "jpeg", "tif"], label_visibility="collapsed")
                 uav_img = self._load_image(uav_file)
                 if uav_img is not None:
-                    st.image(uav_img, caption="UAV Image", use_container_width=True, channels="BGR")
+                    h, w = uav_img.shape[:2]
+                    st.image(uav_img, caption=f"UAV Image ({w}x{h})", use_container_width=True, channels="BGR")
                     
             with col2:
                 st.markdown(f"<div style='display: flex; align-items: center; margin-bottom: 8px;'>{ICON_UPLOAD} <b>Satellite Map</b></div>", unsafe_allow_html=True)
                 map_file = st.file_uploader("Upload Satellite Map", type=["png", "jpg", "jpeg", "tif"], label_visibility="collapsed")
                 map_img = self._load_image(map_file)
                 if map_img is not None:
-                    st.image(map_img, caption="Satellite Map", use_container_width=True, channels="BGR")
+                    h, w = map_img.shape[:2]
+                    st.image(map_img, caption=f"Satellite Map ({w}x{h})", use_container_width=True, channels="BGR")
                     
         return uav_img, map_img
 

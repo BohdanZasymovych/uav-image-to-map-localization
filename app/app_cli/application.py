@@ -68,14 +68,11 @@ class LocalizationCliApplication:
 
         renderer = MapOverlayRenderer()
         uav_h, uav_w = uav_img.shape[:2]
-        estimated_x = float(localization_result.position_px[0])
-        estimated_y = float(localization_result.position_px[1])
         map_overlay, top_left, bottom_right = renderer.render(
             map_img=map_img,
-            position_px_x=estimated_x,
-            position_px_y=estimated_y,
-            bbox_width=uav_w,
-            bbox_height=uav_h,
+            transform_matrix=localization_result.transform_matrix,
+            uav_width=uav_w,
+            uav_height=uav_h,
         )
 
         cv2.imwrite(str(raw_match_path), match_result.raw_match_image)
