@@ -1,21 +1,16 @@
-\section{Localization Pipeline}
+\section{Localization Pipeline}\label{sec:localization_pipeline}
 
+\subsection{Feature Extraction and Matching}\label{subsec:pipeline_feature_extraction}
+The feature extraction module accepts two raw BGR images (the UAV camera feed and the reference satellite map) as input, explicitly converting them to grayscale prior to processing. First, SIFT keypoints and descriptors are computed for both images. Second, to bypass the $\mathcal{O}(N \cdot M)$ computational bottleneck of Brute-Force matching, we implement the Fast Library for Approximate Nearest Neighbors (FLANN). By structuring the satellite map descriptors into a randomized KD-tree forest (configured with 5 trees and 50 search checks), the matching complexity is reduced to $\mathcal{O}(N \log M)$, enabling rapid nearest-neighbor retrieval.  These initial matches are subsequently filtered using Lowe's ratio test (as defined in \autoref{subsec:feature_detection}) with a threshold of $\tau = 0.75$. This specific threshold is chosen to eliminate the vast majority of ambiguous matches caused by repetitive textures while retaining a sufficient number of high-quality geometric anchors. The final output of this stage consists of two corresponding arrays, \texttt{src\_pts} and \texttt{dst\_pts}, each of shape $(N, 2)$, which represent the matched pixel coordinates in the UAV and map coordinate spaces, respectively.
 
-\subsection{Feature Extraction and Matching}
-The feature extraction module accepts two raw BGR images (the UAV camera feed and the reference satellite map) as input, explicitly converting them to grayscale prior to processing. First, SIFT keypoints and descriptors are computed for both images. Second, to bypass the $O(N \cdot M)$ computational bottleneck of Brute-Force matching, we implement the Fast Library for Approximate Nearest Neighbors (FLANN). By structuring the satellite map descriptors into a randomized KD-tree forest (configured with 5 trees and 50 search checks), the matching complexity is reduced to $O(N \log M)$, enabling rapid nearest-neighbor retrieval. These initial matches are subsequently filtered using Lowe's ratio test (as defined in \autoref{subsec:feature_detection}) with a threshold of $\tau = 0.75$. This specific threshold is chosen to eliminate the vast majority of ambiguous matches caused by repetitive textures while retaining a sufficient number of high-quality geometric anchors. The final output of this stage consists of two corresponding arrays, \texttt{src\_pts} and \texttt{dst\_pts}, each of shape $(N, 2)$, which represent the matched pixel coordinates in the UAV and map coordinate spaces, respectively.
+\subsection{RANSAC Configuration}\label{subsec:pipeline_ransac}
+The RANSAC algorithm is applied to the set of matched feature correspondences to robustly estimate the transformation by filtering out outliers within the overall pipeline. We use an inlier threshold $\epsilon = 3$ pixels, meaning that a correspondence is considered consistent with the model if its reprojection error is below this value, as defined in \autoref{subsec:ransac}; smaller values may reject valid matches due to noise, while larger values may include outliers and degrade accuracy. The confidence parameter is set to $p = 0.99$, ensuring a high probability of sampling at least one all-inlier subset according to the probabilistic model described in \autoref{subsec:ransac}, while the number of iterations is capped at $2000$ to limit computation time in worst-case scenarios. The minimal sample size $s$ depends on the chosen transformation model (e.g., $s = 3$ for Affine, $s = 4$ for Projective), which directly affects the required number of iterations $k$; larger minimal sets lead to slower convergence but allow modeling more complex perspective transformations. The output of this stage is a boolean inlier mask over all correspondences, identifying geometrically consistent matches.
 
+\subsection{Transformation Estimation}\label{subsec:pipeline_estimation}
+This stage uses the inlier mask returned by RANSAC and discards all rejected correspondences. For the selected model (Similarity, Affine, or Projective), the pipeline instantiates the appropriate mathematical system defined in \autoref{subsec:transformation_models}. Linear models are solved via the least-squares method, while the Projective model applies Hartley's data normalization and solves the Direct Linear Transformation (DLT) using Singular Value Decomposition (SVD), as detailed in \autoref{subsec:parameter_estimation}. The output of this stage is the final estimated $3 \times 3$ transformation matrix $M$, which is consumed by the coordinate projection step.
 
-\subsection{RANSAC Configuration}
-
-The RANSAC algorithm is applied to the set of matched feature correspondences to robustly estimate the transformation by filtering out outliers within the overall pipeline. We use an inlier threshold $\epsilon = 3$ pixels, meaning that a correspondence is considered consistent with the model if its reprojection error is below this value, as defined in \autoref{subsec:ransac}; smaller values may reject valid matches due to noise, while larger values may include outliers and degrade accuracy. The confidence parameter is set to $p = 0.99$, ensuring a high probability of sampling at least one all-inlier subset according to the probabilistic model described in \autoref{subsec:ransac}, while the number of iterations is capped at $2000$ to limit computation time in worst-case scenarios. The minimal sample size for the affine transformation model is $s = 3$, which directly affects the required number of iterations $k$ as given in \autoref{subsec:ransac}; larger minimal sets lead to slower convergence but allow modeling more complex transformations. The output of this stage is a boolean inlier mask over all correspondences, identifying geometrically consistent matches.
-
-
-\subsection{Transformation Estimation}
-This stage uses the inlier mask returned by RANSAC and discards all rejected correspondences. For the selected model (Similarity or Affine), the pipeline instantiates the appropriate linear system template defined in \autoref{subsec:transformation_models}, solves it with the least-squares method from \autoref{subsec:least_squares}, and converts the recovered parameter vector into a $3 \times 3$ matrix $M$. The output of this stage is only the estimated matrix $M$, which is consumed by the coordinate projection step.
-
-
-\subsection{Coordinate Projection}
-The estimated matrix $M$ is applied to the UAV-image center in homogeneous coordinates, where $W$ and $H$ are image width and height:
+\subsection{Coordinate Projection}\label{subsec:pipeline_projection}
+The estimated matrix $M$ is applied to the UAV-image center in homogeneous coordinates, where $W$ and $H$ are the UAV image width and height:
 \begin{equation}
 \mathbf{c}_{uav} =
 \begin{bmatrix}
@@ -25,22 +20,22 @@ H/2 \\
 \end{bmatrix}
 \end{equation}
 
+The matrix multiplication yields the projected coordinates and the homogeneous scale factor $W'$:
 \begin{equation}
 \begin{bmatrix}
 \tilde{X} \\
 \tilde{Y} \\
-1
+W'
 \end{bmatrix}
 = M\mathbf{c}_{uav}
 \end{equation}
 
+Finally, perspective division is applied to recover the true 2D Cartesian coordinates on the global map: 
 \begin{equation}
-(X_{map}, Y_{map}) = (\tilde{X}, \tilde{Y}).
+(X_{map}, Y_{map}) = \left(\frac{\tilde{X}}{W'}, \frac{\tilde{Y}}{W'}\right).
 \end{equation}
 
-
-\subsection{Complete Pipeline}
-
+\subsection{Complete Pipeline}\label{subsec:pipeline_complete}
 \begin{algorithm}[H]
 \caption{UAV Localization Pipeline}
 \begin{algorithmic}[1]
@@ -49,12 +44,13 @@ H/2 \\
 \STATE Convert $I_{uav}$ and $I_{map}$ to grayscale.
 \STATE Extract SIFT features and match using Lowe's ratio test.
 \STATE \textbf{while} $i < \text{max\_iterations}$ \textbf{do}
-\STATE \quad Sample minimal correspondence set and compute $M_{\text{temp}}$.
-\STATE \quad Count inliers satisfying $d < \epsilon$.
-\STATE \quad If current consensus is the largest, store $M_{\text{temp}}$ and inliers.
+\STATE \quad Sample minimal correspondence set $s$ and compute $M_{\text{temp}}$.
+\STATE \quad Count inliers satisfying reprojection error $d < \epsilon$.
+\STATE \quad If current consensus is the largest, store $M_{\text{temp}}$ and inlier mask.
 \STATE \textbf{end while}
-\STATE Solve overdetermined system on full inlier set to obtain $M$.
-\STATE Project UAV center $(x_c, y_c, 1)^\top$ through $M$ to get $(X_{map}, Y_{map})$.
+\STATE Compute optimal transformation $M$ using the full inlier set.
+\STATE Project UAV center $(x_c, y_c, 1)^\top$ through $M$.
+\STATE Apply perspective division to obtain $(X_{map}, Y_{map})$.
 \RETURN $(X_{map}, Y_{map})$
 \end{algorithmic}
 \end{algorithm}
