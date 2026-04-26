@@ -93,7 +93,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Run CLI Localization for One UAV Frame
+### 1. Run CLI Localization for One UAV Frame
 
 **Run command:**
 
@@ -122,12 +122,44 @@ python -m app.app_cli.cli \
 python -m app.app_cli.cli \
   --map data/examples/satellite_example.tif \
   --uav data/examples/uav_example_01.png \
-  --config configs/default.yaml
+  --config configs/default.yaml \
+  --output-dir outputs/run_cli
 ```
 
-**Main outputs are written to `outputs/`:**
+**Main outputs are written to `--output-dir`:**
 
 - `matches_before_ransac.png`
 - `matches_after_ransac.png`
 - `map_with_estimated_bbox.png`
 - `localization_summary.json`
+
+### 2. Benchmark on UAV-VisLoc (Real Dataset)
+
+The script runs localization on a UAV-VisLoc style folder structure and compares transformation models.
+
+**Full Benchmark Run:**
+
+```bash
+python benchmark_uav_visloc.py \
+  --dataset-root /path/to/UAV-VisLoc \
+  --output-dir outputs/uav_visloc_benchmark \
+  --models affine,similarity,projective \
+  --max-samples 300 \
+  --shuffle \
+  --seed 42 \
+  --bounds-mode scene-csv
+```
+
+**Fast Smoke Test (Quick Verification):**
+Use this command to quickly verify that the benchmark runs without errors and generates plots in just a few seconds. It uses only the `affine` model, limits features, and processes only 5 images.
+
+```bash
+python benchmark_uav_visloc.py \
+  --dataset-root test/test_data \
+  --output-dir outputs/uav_visloc_benchmark_smoke/ \
+  --models affine \
+  --max-samples 5 \
+  --n-features 1000 \
+  --max-iterations 500 \
+  --bounds-mode scene-csv
+```

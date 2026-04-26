@@ -39,6 +39,7 @@ class LocalizationPipeline:
         self,
         uav_img: NDArray,
         map_img: NDArray,
+        visualize: bool = False,
     ) -> tuple[MatchResult, LocalizationResult]:
         logger.info("Starting localization pipeline run")
         time_start = perf_counter()
@@ -78,36 +79,29 @@ class LocalizationPipeline:
 
         execution_time = time_end - time_start
 
-        raw_match_image = cv2.drawMatches(
-            uav_img,
-            uav_keypoints,
-            map_img,
-            map_keypoints,
-            matches,
-            None,
-            flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
-        )
+        match_result = None
+        
+        if visualize:
+            raw_match_image = cv2.drawMatches(
+                uav_img, uav_keypoints, map_img, map_keypoints, matches, None,
+                flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+            )
 
-        inlier_matches = [
-            match for match, is_inlier in zip(matches, best_inlier_mask) if is_inlier
-        ]
+            inlier_matches = [
+                match for match, is_inlier in zip(matches, best_inlier_mask) if is_inlier
+            ]
 
-        match_image = cv2.drawMatches(
-            uav_img,
-            uav_keypoints,
-            map_img,
-            map_keypoints,
-            inlier_matches,
-            None,
-            flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
-        )
+            match_image = cv2.drawMatches(
+                uav_img, uav_keypoints, map_img, map_keypoints, inlier_matches, None,
+                flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+            )
 
-        match_result = MatchResult(
-            src_pts=src_pts,
-            dst_pts=dst_pts,
-            raw_match_image=raw_match_image,
-            match_image=match_image,
-        )
+            match_result = MatchResult(
+                src_pts=src_pts,
+                dst_pts=dst_pts,
+                raw_match_image=raw_match_image,
+                match_image=match_image,
+            )
 
         localization_result = LocalizationResult(
             transform_matrix=M,

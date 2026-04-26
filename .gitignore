@@ -215,3 +215,5 @@ pyrightconfig.json
 *.loa
 ortholoc/
 .codex
+
+UAV_VisLoc_dataset/
