@@ -1,12 +1,29 @@
 \section{Evaluation Strategy}
 
-\subsection{Evaluation Protocol}
-To ensure controlled and reproducible validation, we evaluate the pipeline on a synthetic dataset generated from a high-resolution satellite orthophoto. Each test frame is created by sampling a map patch and applying an affine deformation around its center. The transformed patch is treated as a synthetic UAV frame, while the center of the original sampled patch is used as ground truth in map pixel coordinates.
+To ensure a robust and comprehensive assessment of the localization pipeline, we utilize a two-tiered evaluation strategy. This approach combines controlled synthetic experiments with large-scale validation on real-world aerial data.
 
-For evaluation, we generate $N$ frames and run the full localization pipeline independently on each frame. For frame $i$, we obtain estimated map coordinates $(\hat{X}_i, \hat{Y}_i)$, runtime $t_i$, and matching statistics $(n_i^{\text{inliers}}, n_i^{\text{matches}})$. Frames that fail due to insufficient correspondences or model estimation errors are skipped and excluded from aggregate statistics.
+\subsection{Synthetic Dataset}
+The synthetic dataset is used for controlled and reproducible validation of the mathematical transformation models. Each test frame is created by sampling a high-resolution satellite orthophoto patch and applying a known affine deformation around its center. The transformed patch is treated as a synthetic UAV frame, while the center of the original sampled patch provides an absolute ground truth in map pixel coordinates.
+
+For evaluation, we generate $N$ frames and run the localization pipeline independently on each. Frames that fail due to insufficient correspondences or model estimation errors are logged and excluded from accuracy statistics but included in success rate calculations.
+
+\subsection{Real Dataset}
+To validate the system's performance under actual flight conditions, we utilize the \textbf{UAV-VisLoc} dataset \cite{uav_visloc}. UAV-VisLoc is a large-scale benchmark specifically designed for visual localization in GNSS-denied environments. It contains:
+\begin{itemize}
+    \item \textbf{6,742 UAV images} captured from both multi-rotor and fixed-wing drones at varying altitudes and heading angles.
+    \item \textbf{11 orthorectified satellite maps} covering diverse terrains across 11 cities, including urban, rural, and hilly environments.
+    \item \textbf{Comprehensive Metadata}, providing ground-truth GPS coordinates (latitude/longitude), shooting height, and drone pose for every image.
+\end{itemize}
+Matching UAV frames against these maps presents a significant "domain gap" challenge due to differences in sensors, lighting, and seasonal variations between the drone imagery and the satellite reference.
 
 \subsection{Evaluated Metrics}
-The primary accuracy metric is Root Mean Square Error (RMSE), which measures the Euclidean localization error in map pixels:
+To quantify the performance of each model, we use the following metrics:
+
+\begin{itemize}
+    \item \textbf{Success Rate:} Defined as a \textit{Technical Success}, where the pipeline successfully extracts features, matches them, and produces a final coordinate through the RANSAC algorithm. This metric measures the reliability of the software execution and the existence of a geometric solution, regardless of its accuracy.
+    \item \textbf{Root Mean Square Error (RMSE):} Measures the Euclidean localization error in map pixels:
+\end{itemize}
+
 \begin{equation}
 e_i = \sqrt{(X_i - \hat{X}_i)^2 + (Y_i - \hat{Y}_i)^2},
 \end{equation}
@@ -20,11 +37,9 @@ To characterize efficiency, we report runtime mean and standard deviation:
 \sigma_t = \sqrt{\frac{1}{N}\sum_{i=1}^{N}(t_i - \mu_t)^2}.
 \end{equation}
 
-To characterize geometric consistency of matching, we use the mean inlier ratio:
+To characterize geometric consistency and matching health, we use the mean inlier ratio:
 \begin{equation}
 r_i = \frac{n_i^{\text{inliers}}}{n_i^{\text{matches}}}, \qquad
 \bar{r} = \frac{1}{N}\sum_{i=1}^{N} r_i,
 \end{equation}
-with $r_i=0$ when $n_i^{\text{matches}}=0$.
-
-Together, these metrics provide complementary evidence: RMSE captures localization accuracy, runtime statistics reflect computational cost, and inlier ratio indicates robustness of correspondence filtering.
+where $n_i^{\text{matches}}$ is the count of matches after Lowe's ratio test and $n_i^{\text{inliers}}$ is the count of points retained by RANSAC. Together, these metrics provide evidence of localization accuracy, computational cost, and the robustness of correspondence filtering.

@@ -11,14 +11,17 @@
 \usepackage{xcolor}
 \usepackage[colorlinks=true,allcolors=blue]{hyperref}
 \usepackage{placeins}
+\usepackage{subcaption}
+\usepackage{fontawesome5}
+
+\pagestyle{plain}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \begin{document}
 
-\title{Autonomous UAV Localization via Aerial-to-Satellite Image Registration: Interim Report\\
-}
+\title{Autonomous UAV Localization via Aerial-to-Satellite Image Registration: Interim Report\thanks{Source code available on our \href{https://github.com/BohdanZasymovych/uav-image-to-map-localization}{\faGithub\ GitHub repository}}}
 
 \author{
 \IEEEauthorblockN{Solomiia Gadiichuk}
@@ -49,7 +52,7 @@ kosiv.pn@ucu.edu.ua}
 \input{sections/04_localization_pipeline}
 \input{sections/05_evaluation_strategy}
 \input{sections/06_results}
-\input{sections/07_future_plans_and_risk_analysis}
+\input{sections/07_conclusion}
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

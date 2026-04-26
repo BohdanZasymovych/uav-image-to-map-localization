@@ -1,60 +1,83 @@
 \section{Results}\label{sec:results}
 
-At the current stage, we have implemented a Command Line Interface (CLI) application that ingests a reference map and a UAV camera image, matches their features, and calculates the absolute map coordinates of the UAV image's center. The script is driven by a configuration file that defines the geometric transformation model and the necessary algorithmic parameters. All code is available on the our \href{https://github.com/BohdanZasymovych/uav-image-to-map-localization.git}{GitHub repository}
-
-\subsection{Single Image Match}\label{subsec:single_image_match}
-A single-image localization test was executed using the Affine transformation model. The inputs consisted of a reference satellite map and a single simulated UAV frame from our artificially generated dataset. The run produced the following metrics:
+\subsection{Application Interface and Features}
+To drive the localization engine, we implemented a comprehensive software suite consisting of a Command Line Interface (CLI) and an interactive Graphical User Interface (UI). These applications facilitate the end-to-end pipeline, from image ingestion to coordinate projection. Key features include:
 
 \begin{itemize}
-    \item \textbf{Raw matches:} 478
-    \item \textbf{Inliers after RANSAC:} 471
-    \item \textbf{Runtime (without image rendering):} 1.045 s
-    \item \textbf{Estimated map position:} $(179.99, 866.84)$ px
+    \item \textbf{Model Versatility:} Full support for Similarity (4-DOF), Affine (6-DOF), and Projective (8-DOF) transformation models.
+    \item \textbf{Algorithmic Tuning:} Real-time configuration of SIFT feature limits, Lowe's ratio, and adaptive RANSAC parameters (epsilon, confidence).
+    \item \textbf{Rich Visualization:} Dynamic rendering of keypoint correspondences and projected UAV bounding boxes on the reference map.
+    \item \textbf{Artifact Exporting:} Standardized reporting via JSON summaries and ZIP archives for batch processing.
 \end{itemize}
 
-The pipeline generated the following visual artifacts to verify the matching and localization process:
-
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.98\columnwidth]{figs/matches_after_ransac.png}
-    \caption{Geometrically consistent inlier matches retained after applying the RANSAC algorithm.}
+    \includegraphics[width=1\columnwidth]{figs/app_ui.png}
+    \caption{User Interface for the UAV Localization Application showing successful localization on a synthetic sample.}
+    \label{fig:app_ui}
+\end{figure}
+
+\subsection{Single Image Match}\label{subsec:single_image_match}
+Initial verification was conducted using a single simulated UAV frame. Using an Affine transformation model, the pipeline successfully matched 471 inliers from 478 raw matches ($98.5\%$ inlier ratio). The UAV center was estimated at $(179.99, 866.84)$ pixels in approximately $1.045$ seconds. Visual validation of the correspondences (\autoref{fig:matches_after_ransac}) and the final bounding box (\autoref{fig:map_with_bbox}) confirmed the mathematical correctness of the pipeline under ideal, noise-free conditions.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\columnwidth]{figs/matches_after_ransac.png}
+    \caption{Geometrically consistent inlier matches retained after RANSAC filtering.}
     \label{fig:matches_after_ransac}
 \end{figure}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.7\columnwidth]{figs/uav_image.png} 
-    
-    \vspace{0.4cm}
-    
-    \includegraphics[width=\columnwidth]{figs/map_with_estimated_bbox.png}
-    \caption{Top: The input simulated UAV camera frame. Bottom: The reference satellite map with the final estimated UAV location highlighted by a bounding box.}
-    \label{fig:map_with_bbox}
+\begin{figure}[H]
+     \centering
+     \begin{subfigure}[b]{0.6\columnwidth}
+         \centering
+         \includegraphics[width=\textwidth]{figs/uav_image.png}
+         \caption{Input synthetic UAV frame.}
+         \label{fig:uav_frame}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{1.0\columnwidth}
+         \centering
+         \includegraphics[width=\textwidth]{figs/map_with_estimated_bbox.png}
+         \caption{Reference map with the projected UAV footprint.}
+         \label{fig:map_footprint}
+     \end{subfigure}
+        \caption{Single image localization results showing the relationship between the captured frame and the global map.}
+        \label{fig:map_with_bbox}
 \end{figure}
 
-\FloatBarrier
+\subsection{Synthetic Dataset Evaluation}\label{subsec:dataset_evaluation}
+We benchmarked the pipeline on a controlled dataset of 60 synthetically deformed satellite crops. The system achieved a $90\%$ technical success rate with a mean RMSE of $16.69$ pixels. The distribution of errors (\autoref{fig:error_distribution}) confirms that the pipeline is highly precise when the UAV image is a direct geometric transformation of the reference map. 
 
-\subsection{Dataset Evaluation}\label{subsec:dataset_evaluation}
-To quantify pipeline behavior beyond a single frame, we ran the dataset-level evaluation on 60 synthetically generated UAV crops over the same reference map. The evaluator successfully localized 54 frames and skipped 6 frames due to lack of the found features after RANSAC filtering. The aggregate results are:
-
-\begin{itemize}
-    \item \textbf{Successful localizations:} 54 / 60 (90\%)
-    \item \textbf{RMSE:} 16.69 px
-    \item \textbf{Mean runtime:} $0.459 \pm 0.228$ s
-    \item \textbf{Mean inlier ratio:} 0.807
-\end{itemize}
-
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\columnwidth]{figs/error_distribution.png}
-    \caption{Distribution of per-frame localization errors over the successfully processed dataset frames.}\label{fig:error_distribution}
+    \includegraphics[width=1\columnwidth]{figs/error_distribution.png}
+    \caption{Distribution of localization errors across the synthetic dataset.}\label{fig:error_distribution}
 \end{figure}
 
-\begin{figure}[htbp]
+\subsection{Real Dataset Evaluation}\label{subsec:real_evaluation}
+The final phase evaluated the pipeline on the UAV-VisLoc dataset \cite{uav_visloc} to compare the Similarity, Affine, and Projective models under real-world conditions. While all models achieved a $84\%$ technical success rate, the accuracy metrics diverged significantly.
+
+\begin{table}[H]
+    \caption{Comparative Performance Summary on the UAV-VisLoc Dataset.}\label{tab:real_results}
     \centering
-    \includegraphics[width=\columnwidth]{figs/runtime_distribution.png}
-    \caption{Per-frame runtime distribution for the dataset evaluation run.}\label{fig:runtime_distribution}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{Success Rate} & \textbf{RMSE (px)} & \textbf{Inlier Ratio} & \textbf{Runtime (s)} \\
+        \hline
+        Similarity & 84\% & 45,713 & 0.079 & 1.90 \\
+        Affine     & 84\% & 146,846 & 0.089 & 1.96 \\
+        Projective & 84\% & 15,390 & 0.120 & 2.36 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\columnwidth]{figs/pixel_error_by_model.png}
+    \caption{Mean pixel error and standard deviation by transformation model.}
+    \label{fig:real_pixel_error}
 \end{figure}
 
-\FloatBarrier
+The benchmark results (\autoref{tab:real_results}, \autoref{fig:real_pixel_error}) reveal a catastrophic degradation in accuracy compared to the synthetic tests. The Similarity and Affine models exhibited extreme Root Mean Square Errors, whereas the Projective model remained relatively more stable ($15,390$ px). The mean inlier ratio across all models dropped below $0.12$, indicating that over $88\%$ of SIFT correspondences were rejected as outliers. Furthermore, the Projective model exhibited a slightly higher runtime due to the computational overhead of Singular Value Decomposition (SVD) compared to the Normal Equations solver used for the other models.
 

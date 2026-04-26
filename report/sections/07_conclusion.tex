@@ -1,0 +1,23 @@
+\section{Conclusion and Future Outlook}\label{sec:conclusion}
+
+The development and evaluation of this UAV localization engine have provided critical insights into the challenges of vision-based absolute positioning. Our experiments reveal a stark contrast between theoretical stability and real-world robustness.
+
+\subsection{Summary of Findings}
+The localization pipeline achieved high precision on the synthetic dataset ($90\%$ success, $16.69$px RMSE), proving that the core mathematical logic for coordinate projection and RANSAC-based estimation is sound. however, the transition to real-world data from the UAV-VisLoc benchmark exposed fundamental limitations. While the system remained technically functional, the localization error increased by several orders of magnitude.
+
+\subsection{The Domain Gap Challenge}
+The primary cause of the accuracy degradation is the "domain gap" between the UAV camera feed and georeferenced satellite maps. In real-world environments, the images are not merely geometric transformations of each other. Dynamic changes---such as seasonal variations, building renovations, moving vehicles, and differing sun angles---alter the local pixel gradients. Since SIFT relies on these gradients for feature description, the resulting correspondences were dominated by outliers, leading to the observed inlier ratios of less than $12\%$.
+
+\subsection{Possible improvments}
+To bridge this gap and achieve production-ready robustness, the pipeline must evolve beyond classical point-matching. Future development should focus on three tiers:
+
+\begin{itemize}
+    \item \textbf{Learned Matching:} Replace hand-crafted descriptors like SIFT with deep-learned feature extractors such as \textit{SuperPoint} or \textit{LoFTR}. These networks are trained to find invariant anchors across multi-modal aerial imagery, providing superior matching robustness compared to classical gradient-based methods \cite{opencv_matching}.
+    \item \textbf{Semantic Registration:} Utilize semantic-guided feature detection to match high-level geometric structures (roads, intersections, building footprints) instead of raw textures \cite{xue2023sfd2}. This approach is naturally robust to seasonal and lighting changes as it prioritizes static urban features over transient visual patterns.
+    \item \textbf{Hierarchical Search:} Implement a coarse-to-fine localization strategy.
+ By using low-resolution global descriptors (e.g., \textit{NetVLAD}) to identify the general candidate area on the map, the search space for geometric matching is drastically reduced, decreasing the probability of false matches and improving computational efficiency.
+\end{itemize}
+
+In conclusion, while a classical SIFT-RANSAC architecture provides a strong foundation for controlled environments, autonomous UAV operation in unconstrained real-world settings requires a multi-modal approach combining geometry with high-level semantic understanding.
+
+The complete source code are available on our \href{https://github.com/BohdanZasymovych/uav-image-to-map-localization}{\faGithub\ GitHub repository}.
