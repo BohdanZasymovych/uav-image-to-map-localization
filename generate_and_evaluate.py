@@ -20,6 +20,7 @@ from evaluation.visualizer import Visualizer
 from localization.features.sift import SIFTExtractor
 from localization.pipeline import LocalizationPipeline
 from localization.transforms.affine import AffineModel
+from localization.transforms.projective import ProjectiveModel
 from localization.transforms.similarity import SimilarityModel
 
 
@@ -117,8 +118,10 @@ def __build_pipeline(config: dict[str, Any]) -> LocalizationPipeline:
         model = AffineModel()
     elif model_name == "similarity":
         model = SimilarityModel()
+    elif model_name == "projective":
+        model = ProjectiveModel()
     else:
-        raise NotImplementedError("Only Affine and Similarity models are supported now")
+        raise NotImplementedError("Only Affine, Similarity and Projective models are supported now")
 
     ransac_cfg = config.get("ransac", {})
     if not isinstance(ransac_cfg, dict):

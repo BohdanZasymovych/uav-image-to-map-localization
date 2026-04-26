@@ -15,7 +15,7 @@ Current implementation uses:
 - SIFT keypoints and descriptors
 - Descriptor matching with FLANN + ratio filtering
 - RANSAC for robust outlier rejection
-- Affine/Similarity geometric transform estimation
+- Affine/Similarity/Projective geometric transform estimation
 
 Pipeline flow:
 
@@ -77,10 +77,11 @@ Evaluation plots:
   - `visualizer.py`: plot generation and summary export for evaluation outputs.
   - `base.py`: shared evaluation interfaces.
 - `app/app_cli/` is the production command-line app for one map/UAV pair.
-- `app/app_ui/` provides the Streamlit UI for interactive experiments and quick visual checks (Not implemented yet).
+- `app/app_ui/` provides the Streamlit UI for interactive experiments and quick visual checks.
 - `configs/default.yaml` is the central runtime configuration for extractor/model selection and RANSAC/evaluation parameters.
 - `data/` stores reference map images and prepared synthetic datasets used for experiments.
 - `generate_and_evaluate.py` is the orchestration script that builds the pipeline from config, generates synthetic frames, runs evaluation, and saves plots/summary outputs.
+- `benchmark_uav_visloc.py` benchmarks the pipeline on UAV-VisLoc style real datasets and compares Affine/Similarity/Projective models.
 - `report/main.tex` contains the written project report.
 
 ## Dependencies
@@ -131,3 +132,50 @@ python -m app.app_cli.cli \
 - `matches_after_ransac.png`
 - `map_with_estimated_bbox.png`
 - `localization_summary.json`
+
+### Benchmark on UAV-VisLoc (Real Dataset)
+
+This repository includes a real-dataset benchmark script:
+
+- `benchmark_uav_visloc.py`
+
+The script runs localization on a UAV-VisLoc style folder structure and compares 3 transformation models:
+
+- `affine`
+- `similarity`
+- `projective`
+
+#### Required arguments
+
+- `--dataset-root`: path to UAV-VisLoc root directory.
+- `--output-dir`: path where CSV and plots will be saved.
+
+#### Useful optional arguments
+
+- `--max-samples`: limit number of test images (default: 300).
+- `--scene-ids`: test only selected scenes (for example `03` or `01 03 11`).
+- `--models`: comma-separated list, default `affine,similarity,projective`.
+- `--shuffle --seed`: randomize sample subset reproducibly.
+- `--bounds-mode`: `scene-csv` (default) or `satellite-range`.
+- `--satellite-range-csv`: optional path to `satellite_coordinates_range.csv`.
+
+#### Example run
+
+```bash
+python benchmark_uav_visloc.py \
+  --dataset-root /path/to/UAV-VisLoc \
+  --output-dir outputs/uav_visloc_benchmark \
+  --models affine,similarity,projective \
+  --max-samples 300 \
+  --shuffle \
+  --seed 42 \
+  --bounds-mode scene-csv
+```
+
+#### Saved outputs
+
+- `per_sample_results.csv`: one row per image and model.
+- `summary_by_model.csv`: aggregated metrics per model.
+- `runtime_by_model.png`: mean runtime with standard deviation bars.
+- `pixel_error_by_model.png`: mean pixel error with standard deviation bars.
+- `success_rate_by_model.png`: localization success rate per model.
