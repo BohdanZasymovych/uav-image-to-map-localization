@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 class Sidebar:
     def __init__(self):
-        self.model_options = ["Affine", "Similarity"]
+        self.model_options = ["Affine", "Similarity", "Projective"]
         self.extractor_options = ["SIFT"]
 
     def render(self) -> Dict[str, Any]:

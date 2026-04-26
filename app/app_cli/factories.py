@@ -7,6 +7,7 @@ from localization.features.sift import SIFTExtractor
 from localization.pipeline import LocalizationPipeline
 from localization.transforms.affine import AffineModel
 from localization.transforms.base import TransformationModel
+from localization.transforms.projective import ProjectiveModel
 from localization.transforms.similarity import SimilarityModel
 
 
@@ -38,7 +39,7 @@ class LocalizationComponentFactory:
         if model_name == "similarity":
             return SimilarityModel()
         if model_name == "projective":
-            raise NotImplementedError("Projective model is not implemented in this repository")
+            return ProjectiveModel()
 
         raise ValueError(f"Unsupported model: {model_name}")
 
