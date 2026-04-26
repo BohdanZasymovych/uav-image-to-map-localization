@@ -15,7 +15,7 @@ Current implementation uses:
 - SIFT keypoints and descriptors
 - Descriptor matching with FLANN + ratio filtering
 - RANSAC for robust outlier rejection
-- Affine/Similarity/Projective geometric transform estimation
+- Affine/Similarity geometric transform estimation
 
 Pipeline flow:
 
@@ -77,11 +77,10 @@ Evaluation plots:
   - `visualizer.py`: plot generation and summary export for evaluation outputs.
   - `base.py`: shared evaluation interfaces.
 - `app/app_cli/` is the production command-line app for one map/UAV pair.
-- `app/app_ui/` provides the Streamlit UI for interactive experiments and quick visual checks.
+- `app/app_ui/` provides the Streamlit UI for interactive experiments and quick visual checks (Not implemented yet).
 - `configs/default.yaml` is the central runtime configuration for extractor/model selection and RANSAC/evaluation parameters.
 - `data/` stores reference map images and prepared synthetic datasets used for experiments.
 - `generate_and_evaluate.py` is the orchestration script that builds the pipeline from config, generates synthetic frames, runs evaluation, and saves plots/summary outputs.
-- `benchmark_uav_visloc.py` benchmarks the pipeline on UAV-VisLoc style real datasets and compares Affine/Similarity/Projective models.
 - `report/main.tex` contains the written project report.
 
 ## Dependencies
@@ -94,7 +93,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Run CLI Localization for One UAV Frame
+### 1. Run CLI Localization for One UAV Frame
 
 **Run command:**
 
@@ -123,43 +122,22 @@ python -m app.app_cli.cli \
 python -m app.app_cli.cli \
   --map data/examples/satellite_example.tif \
   --uav data/examples/uav_example_01.png \
-  --config configs/default.yaml
+  --config configs/default.yaml \
+  --output-dir outputs/run_cli
 ```
 
-**Main outputs are written to `outputs/`:**
+**Main outputs are written to `--output-dir`:**
 
 - `matches_before_ransac.png`
 - `matches_after_ransac.png`
 - `map_with_estimated_bbox.png`
 - `localization_summary.json`
 
-### Benchmark on UAV-VisLoc (Real Dataset)
+### 2. Benchmark on UAV-VisLoc (Real Dataset)
 
-This repository includes a real-dataset benchmark script:
+The script runs localization on a UAV-VisLoc style folder structure and compares transformation models.
 
-- `benchmark_uav_visloc.py`
-
-The script runs localization on a UAV-VisLoc style folder structure and compares 3 transformation models:
-
-- `affine`
-- `similarity`
-- `projective`
-
-#### Required arguments
-
-- `--dataset-root`: path to UAV-VisLoc root directory.
-- `--output-dir`: path where CSV and plots will be saved.
-
-#### Useful optional arguments
-
-- `--max-samples`: limit number of test images (default: 300).
-- `--scene-ids`: test only selected scenes (for example `03` or `01 03 11`).
-- `--models`: comma-separated list, default `affine,similarity,projective`.
-- `--shuffle --seed`: randomize sample subset reproducibly.
-- `--bounds-mode`: `scene-csv` (default) or `satellite-range`.
-- `--satellite-range-csv`: optional path to `satellite_coordinates_range.csv`.
-
-#### Example run
+**Full Benchmark Run:**
 
 ```bash
 python benchmark_uav_visloc.py \
@@ -172,10 +150,16 @@ python benchmark_uav_visloc.py \
   --bounds-mode scene-csv
 ```
 
-#### Saved outputs
+**Fast Smoke Test (Quick Verification):**
+Use this command to quickly verify that the benchmark runs without errors and generates plots in just a few seconds. It uses only the `affine` model, limits features, and processes only 5 images.
 
-- `per_sample_results.csv`: one row per image and model.
-- `summary_by_model.csv`: aggregated metrics per model.
-- `runtime_by_model.png`: mean runtime with standard deviation bars.
-- `pixel_error_by_model.png`: mean pixel error with standard deviation bars.
-- `success_rate_by_model.png`: localization success rate per model.
+```bash
+python benchmark_uav_visloc.py \
+  --dataset-root test/test_data \
+  --output-dir outputs/uav_visloc_benchmark_smoke/ \
+  --models affine \
+  --max-samples 5 \
+  --n-features 1000 \
+  --max-iterations 500 \
+  --bounds-mode scene-csv
+```

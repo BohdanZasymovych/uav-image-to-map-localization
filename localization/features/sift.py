@@ -38,28 +38,31 @@ class SIFTExtractor(FeatureExtractor):
     def detect_and_compute(
         self,
         img: NDArray,
+        max_dim: int = 2048,
     ) -> tuple[list, NDArray]:
-        """
-        Detect SIFT keypoints and compute descriptors
-
-        Parameters
-        img : NDArray
-            BGR image array of shape (H, W, 3)
-
-        Returns
-        keypoints : list[cv2.KeyPoint]
-            List of detected keypoints
-        descriptors : NDArray, shape (N, 128)
-            SIFT descriptors as float32 array
-        """
+        """..."""
         if img.ndim == 3:
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         else:
             gray = img
 
+        h, w = gray.shape
+        scale = 1.0
+
+        if max(h, w) > max_dim:
+            scale = max_dim / max(h, w)
+            new_w, new_h = int(w * scale), int(h * scale)
+            gray = cv2.resize(gray, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
         keypoints, descriptors = self.detector.detectAndCompute(gray, None)
+        
         if descriptors is None:
             descriptors = np.empty((0, 128), dtype=np.float32)
+
+        if scale != 1.0:
+            for kp in keypoints:
+                kp.pt = (kp.pt[0] / scale, kp.pt[1] / scale)
+                kp.size = kp.size / scale
 
         return keypoints, descriptors
 
