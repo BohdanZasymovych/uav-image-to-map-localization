@@ -1,6 +1,7 @@
 # Dataset generation and program run artifacts
 test
 temp
+scripts-internal
 
 # outputs
 outputs*
