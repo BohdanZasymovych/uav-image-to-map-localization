@@ -56,9 +56,6 @@ class LocalizationResult:
     This is the primary output of the localization pipeline.
     """
 
-    position_geo: Optional[tuple[float, float]]
-    """(latitude, longitude) if a Georeferencer was provided, else None."""
-
     n_raw_matches: int
     """Number of matches after Lowe's ratio test, before RANSAC."""
 

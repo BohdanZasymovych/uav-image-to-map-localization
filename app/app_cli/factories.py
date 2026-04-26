@@ -53,7 +53,6 @@ class LocalizationComponentFactory:
             epsilon=epsilon,
             confidence=confidence,
             max_iterations=max_iterations,
-            georeferencer=None,
         )
 
     def ransac_params(self) -> tuple[float, float, int]:

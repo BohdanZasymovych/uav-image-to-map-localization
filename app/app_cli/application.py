@@ -177,7 +177,6 @@ class LocalizationCliApplication:
                     float(localization_result.position_px[0]),
                     float(localization_result.position_px[1]),
                 ],
-                "position_geo": localization_result.position_geo,
                 "n_raw_matches": int(localization_result.n_raw_matches),
                 "n_inliers": int(localization_result.n_inliers),
                 "ransac_iterations": int(localization_result.ransac_iterations),

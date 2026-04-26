@@ -43,7 +43,7 @@ class LocalizationStreamlitApp:
     def run(self):
         st.title("Autonomous UAV Localization")
         st.markdown("""
-        This application calculates a UAV's geographic coordinates by matching its real-time camera feed 
+        This application calculates a UAV's map coordinates by matching its real-time camera feed 
         against preloaded satellite maps.
         """)
 

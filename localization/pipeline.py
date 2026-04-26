@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import Optional
 
 import logging
 from time import perf_counter
@@ -9,7 +8,6 @@ from numpy.typing import NDArray
 import cv2
 
 from localization.features.base import FeatureExtractor
-from localization.georeferencing import Georeferencer
 from localization.ransac import RANSAC
 from localization.result import LocalizationResult, MatchResult
 from localization.transforms.base import TransformationModel
@@ -24,14 +22,12 @@ class LocalizationPipeline:
         epsilon: float = 3.0,
         confidence: float = 0.99,
         max_iterations: int = 2000,
-        georeferencer: Optional[Georeferencer] = None,
     ) -> None:
         self.extractor = extractor
         self.model = model
         self.epsilon = epsilon
         self.confidence = confidence
         self.max_iterations = max_iterations
-        self.georeferencer = georeferencer
         self.ransac = RANSAC(
             model=self.model,
             epsilon=self.epsilon,
@@ -78,10 +74,6 @@ class LocalizationPipeline:
         position_px = self.model.project(M, uav_img_center)[0]
         logger.info("Estimated pixel position: %s", position_px)
 
-        position_geo = None
-        if self.georeferencer is not None:
-            position_geo = self.georeferencer.pixel_to_geo(*position_px)
-
         time_end = perf_counter()
 
         execution_time = time_end - time_start
@@ -121,7 +113,6 @@ class LocalizationPipeline:
             transform_matrix=M,
             inlier_mask=best_inlier_mask,
             position_px=position_px,
-            position_geo=position_geo,
             n_raw_matches=len(matches),
             n_inliers=int(np.count_nonzero(best_inlier_mask)),
             ransac_iterations=iterations_done,
