@@ -1,165 +1,90 @@
-# UAV Image-to-Map Localization
+# Autonomous UAV Localization via Aerial-to-Satellite Registration
 
-This project localizes a UAV camera frame on a large satellite map.
+This project develops a vision-based localization engine that calculates a UAV's absolute geographic coordinates by matching its real-time camera feed against preloaded satellite maps. It provides a robust, passive alternative to GNSS navigation in electronically contested or signal-denied environments.
 
-In short: given one UAV image and one reference map image, the system estimates where the UAV frame center is located on the map and saves visual + JSON outputs.
+![Project Overview](report/figs/image_to_map_localization.png)
 
-## Problem We Solve
+## Core Concepts
 
-GPS can be noisy or unavailable in some conditions. We address a vision-based alternative: match the UAV image to a known satellite map and recover the UAV position directly from image content.
+The system implements a robust geometric registration pipeline designed for cross-domain imagery (drone vs. satellite):
 
-## Algorithms and Pipeline
-
-Current implementation uses:
-
-- SIFT keypoints and descriptors
-- Descriptor matching with FLANN + ratio filtering
-- RANSAC for robust outlier rejection
-- Affine/Similarity geometric transform estimation
-
-Pipeline flow:
-
-1. Load map image and UAV image.
-2. Detect and describe local features in both images.
-3. Match descriptors between UAV and map.
-4. Use RANSAC to keep geometrically consistent matches.
-5. Estimate the transform and project UAV image center to map coordinates.
-6. Save artifacts: raw matches, inlier matches, map overlay with estimated bounding box, JSON summary.
-
-## Evaluation and Current Results
-
-### Single Image Localization
-
-- Raw matches: 478
-- Inliers after RANSAC: 471
-- Runtime: 1.045 s
-- Estimated map position: (179.99, 866.84) px
-
-Example outputs:
-
-**Figure 1. Inlier matches after RANSAC**
-
-![Figure 1 - Inlier matches after RANSAC](report/figs/matches_after_ransac.png)
-
-| Figure 2. Input UAV frame | Figure 3. Estimated UAV location on map |
-| --- | --- |
-| ![Figure 2 - Input UAV frame](report/figs/uav_image.png) | ![Figure 3 - Estimated UAV location on map](report/figs/map_with_estimated_bbox.png) |
-
-### Dataset Evaluation
-
-- Frames processed: 60
-- Successful localizations: 54 (90%)
-- RMSE: 16.69 px
-- Mean runtime: 0.459 +/- 0.228 s
-- Mean inlier ratio: 0.807
-
-Evaluation plots:
-
-**Figure 4. Error distribution**
-
-![Figure 4 - Error distribution](report/figs/error_distribution.png)
-
-**Figure 5. Runtime distribution**
-
-![Figure 5 - Runtime distribution](report/figs/runtime_distribution.png)
+1.  **SIFT Feature Extraction:** We use the *Scale-Invariant Feature Transform* to detect interest points. Unlike simpler methods, SIFT is mathematically robust to the changes in altitude (scale) and heading (rotation) that occur during UAV flight.
+2.  **FLANN Matching:** Descriptors are matched using the *Fast Library for Approximate Nearest Neighbors*. This allows us to search through tens of thousands of satellite features in milliseconds by using optimized KD-Tree data structures.
+3.  **RANSAC Outlier Rejection:** In real-world data, up to 90% of matches can be false. *Random Sample Consensus* iteratively finds the largest subset of points that agree on a single geometric transformation, effectively "filtering out" the noise of moved cars, changing shadows, and seasonal variations.
+4.  **Transformation Estimation (SVD):** We solve for the transformation matrix using *Singular Value Decomposition*. This provides higher numerical stability than standard solvers, preventing the coordinate "explosions" often seen when dealing with noisy GPS data.
 
 ## Project Structure
 
-- `localization/` contains the full localization stack.
-  - `features/`: feature extractor interface and implementations (SIFT/ORB/SURF).
-  - `transforms/`: geometric models (Similarity, Affine, Projective) and base model API.
-  - `ransac.py`: model-agnostic robust estimator for inlier selection and transform fitting.
-  - `pipeline.py`: end-to-end localization flow from matching to UAV center projection.
-  - `georeferencing.py`, `result.py`: coordinate conversion helpers and output data structures.
-- `evaluation/` contains the benchmarking workflow around the localization pipeline.
-  - `dataset.py`: synthetic UAV frame generation with known ground-truth map positions.
-  - `metrics.py`: evaluation runner and aggregate metrics (RMSE, runtime, inlier ratio).
-  - `visualizer.py`: plot generation and summary export for evaluation outputs.
-  - `base.py`: shared evaluation interfaces.
-- `app/app_cli/` is the production command-line app for one map/UAV pair.
-- `app/app_ui/` provides the Streamlit UI for interactive experiments and quick visual checks (Not implemented yet).
-- `configs/default.yaml` is the central runtime configuration for extractor/model selection and RANSAC/evaluation parameters.
-- `data/` stores reference map images and prepared synthetic datasets used for experiments.
-- `generate_and_evaluate.py` is the orchestration script that builds the pipeline from config, generates synthetic frames, runs evaluation, and saves plots/summary outputs.
-- `report/main.tex` contains the written project report.
+```text
+├── app/
+│   ├── app_cli/           # Command Line Interface application
+│   └── app_ui/            # Interactive Streamlit GUI
+├── localization/          # Core localization engine
+│   ├── features/          # SIFT/ORB/SURF extractors
+│   ├── transforms/        # Affine, Similarity, and Projective models
+│   ├── ransac.py          # Robust parameter estimator
+│   └── pipeline.py        # End-to-end localization logic
+├── evaluation/            # Benchmarking and metrics suite
+├── report/                # Technical report (LaTeX) and figures
+├── configs/               # YAML configuration files
+└── data/                  # Example maps and datasets
+```
 
-## Dependencies
+## Quick Start
 
+### Installation
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Usage
-
-### 1. Run CLI Localization for One UAV Frame
-
-**Run command:**
-
+### 1. Interactive UI (Streamlit)
+The easiest way to experiment with the pipeline is through the web-based GUI.
 ```bash
-python -m app.app_cli.cli \
-  --map <MAP_IMAGE_PATH> \
-  --uav <UAV_IMAGE_PATH> \
-  --config <CONFIG_PATH> \
-  --output-dir <OUTPUT_DIR> \
-  [--log-level <DEBUG|INFO|WARNING|ERROR|CRITICAL>] \
-  [--log-file <LOG_FILE_PATH>]
+streamlit run app/app_ui/ui.py
+```
+**Features:**
+- Real-time parameter tuning (SIFT ratio, RANSAC epsilon, etc.)
+- Visual inspection of inlier matches and projected footprints.
+- Export results as standardized ZIP archives.
+
+![UI Showcase](report/figs/app_ui.png)
+
+### 2. Command Line Interface (Batch Processing)
+```bash
+python -m app.app_cli.cli --map path/to/map.tif --uav path/to/uav.jpg --config configs/default.yaml --output-dir outputs
 ```
 
-**Parameter quick reference:**
+## Benchmarks & Results
 
-- `--map`: path to the reference satellite map image.
-- `--uav`: path to the UAV frame/image to localize.
-- `--config`: path to the YAML configuration file.
-- `--output-dir`: folder where output images and JSON summary are saved.
-- `--log-level` (optional): logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`).
-- `--log-file` (optional): file path to save logs.
+### Synthetic Dataset (Control Test)
+Evaluated on 60 synthetically deformed satellite crops to verify mathematical correctness:
+- **Success Rate:** 90%
+- **RMSE:** 16.69 px
+- **Mean Inlier Ratio:** 0.807
 
-**Example command:**
+### Real-World Evaluation (UAV-VisLoc)
+Comparative performance of models on the [UAV-VisLoc](https://github.com/IntelliSensing/UAV-VisLoc) dataset (50 samples):
 
-```bash
-python -m app.app_cli.cli \
-  --map data/examples/satellite_example.tif \
-  --uav data/examples/uav_example_01.png \
-  --config configs/default.yaml \
-  --output-dir outputs/run_cli
-```
+| Model | Success Rate | RMSE (px) | Inlier Ratio | Runtime (s) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Similarity** | 84% | 45,713 | 0.079 | 1.90 |
+| **Affine** | 84% | 146,846 | 0.089 | 1.96 |
+| **Projective** | 84% | **15,390** | **0.120** | 2.36 |
 
-**Main outputs are written to `--output-dir`:**
+## Limitations & Future Roadmap
 
-- `matches_before_ransac.png`
-- `matches_after_ransac.png`
-- `map_with_estimated_bbox.png`
-- `localization_summary.json`
+Our experiments on the **UAV-VisLoc** dataset revealed a significant "Domain Gap." Classical SIFT features struggle when the ground appearance changes between the satellite reference and the real-time drone feed (due to seasonal changes, construction, or different sensor types).
 
-### 2. Benchmark on UAV-VisLoc (Real Dataset)
+### Proposed Improvements:
+- **Deep Learned Matching:** Transitioning to neural-network-based matchers like **LoFTR** or **SuperGlue** to find more stable correspondences in unconstrained environments.
+- **Semantic Registration:** Matching based on infrastructure geometry (roads, building footprints) rather than raw pixels, which is naturally robust to lighting and weather changes.
+- **Hierarchical Search:** Using global descriptors (e.g., **NetVLAD**) to narrow down the search area before performing fine-grained geometric matching.
 
-The script runs localization on a UAV-VisLoc style folder structure and compares transformation models.
+## Sources & References
 
-**Full Benchmark Run:**
-
-```bash
-python benchmark_uav_visloc.py \
-  --dataset-root /path/to/UAV-VisLoc \
-  --output-dir outputs/uav_visloc_benchmark \
-  --models affine,similarity,projective \
-  --max-samples 300 \
-  --shuffle \
-  --seed 42 \
-  --bounds-mode scene-csv
-```
-
-**Fast Smoke Test (Quick Verification):**
-Use this command to quickly verify that the benchmark runs without errors and generates plots in just a few seconds. It uses only the `affine` model, limits features, and processes only 5 images.
-
-```bash
-python benchmark_uav_visloc.py \
-  --dataset-root test/test_data \
-  --output-dir outputs/uav_visloc_benchmark_smoke/ \
-  --models affine \
-  --max-samples 5 \
-  --n-features 1000 \
-  --max-iterations 500 \
-  --bounds-mode scene-csv
-```
+- **UAV-VisLoc Dataset:** Zhang, J. et al. (2021). [GitHub Repository](https://github.com/IntelliSensing/UAV-VisLoc)
+- **SFD2: Semantic-Guided Matching:** Xue, F. et al. (CVPR 2023). [Paper Link](https://cvpr.thecvf.com/virtual/2023/poster/22070)
+- **Feature Matching Overview:** Satya Mallick. [LearnOpenCV Guide](https://learnopencv.com/feature-matching/)
+- **Vision-Based Localization:** Encord Guide. [Technical Blog](https://encord.com/blog/vision-based-localization-a-guide-to-vbl-technique/)
