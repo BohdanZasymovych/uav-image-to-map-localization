@@ -1,5 +1,5 @@
 extractor: SIFT
-model: Affine
+model: Projective
 
 sift:
   n_features: 0         # 0 = unlimited

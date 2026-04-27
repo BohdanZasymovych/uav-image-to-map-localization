@@ -65,7 +65,8 @@ class ProjectiveModel(TransformationModel):
             A[2 * i]     = [x, y, 1, 0, 0, 0, -X * x, -X * y, -X]
             A[2 * i + 1] = [0, 0, 0, x, y, 1, -Y * x, -Y * y, -Y]
 
-        _, _, Vh = np.linalg.svd(A)
+        from utils.svd import compute_svd_jacobi
+        _, _, Vh = compute_svd_jacobi(A)
         h = Vh[-1, :]
         H_norm = h.reshape(3, 3)
 
