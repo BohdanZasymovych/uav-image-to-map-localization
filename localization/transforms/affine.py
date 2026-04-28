@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
+from utils.solver import solve_linear_system
+
 from localization.transforms.base import TransformationModel
 
 
@@ -65,7 +67,6 @@ class AffineModel(TransformationModel):
             b[2*i] = x_dst
             b[2*i + 1] = y_dst
         
-        from utils.solver import solve_linear_system
         solution_vector = solve_linear_system(A=A.T @ A, b=A.T @ b)
         a_00, a_01, tx, a_10, a_11, ty, = solution_vector
 
