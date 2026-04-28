@@ -10,21 +10,18 @@ def _compute_jacobi_rotation(col_i: NDArray, col_j: NDArray, tol: float = 1e-12)
     beta = np.dot(col_j, col_j)
     gamma = np.dot(col_i, col_j)
 
-    # If the columns are already orthogonal (or dot product is practically zero), skip
     if abs(gamma) < tol:
         return 1.0, 0.0, False
 
-    # Calculate the rotation angle parameters
     zeta = (beta - alpha) / (2.0 * gamma)
     
-    # Calculate tan(theta) = t
     if zeta == 0.0:
         t = 1.0
     else:
         t = np.sign(zeta) / (abs(zeta) + np.sqrt(1.0 + zeta**2))
         
-    c = 1.0 / np.sqrt(1.0 + t**2) # cos(theta)
-    s = c * t                     # sin(theta)
+    c = 1.0 / np.sqrt(1.0 + t**2)
+    s = c * t
     
     return c, s, True
 
@@ -67,12 +64,9 @@ def compute_svd_jacobi(A: NDArray, max_sweeps: int = 100, tol: float = 1e-12) ->
     """
     M_rows, N_cols = A.shape
     
-    # W will eventually become U * S
     W = A.astype(np.float64).copy()
-    # V will accumulate the right singular vectors
     V = np.eye(N_cols, dtype=np.float64)
     
-    # Iterative orthogonalization sweep
     for _ in range(max_sweeps):
         changed = False
         for i in range(N_cols - 1):
@@ -83,21 +77,16 @@ def compute_svd_jacobi(A: NDArray, max_sweeps: int = 100, tol: float = 1e-12) ->
                     _apply_givens_rotation(V, i, j, c, s)
                     changed = True
                     
-        # If no rotations were performed in a full sweep, the matrix is orthogonal
         if not changed:
             break
 
-    # Calculate singular values (Euclidean norms of the orthogonal columns)
     S = np.linalg.norm(W, axis=0)
     
-    # Calculate U by normalizing the columns of W
     U = np.zeros_like(W)
     for i in range(N_cols):
         if S[i] > tol:
             U[:, i] = W[:, i] / S[i]
             
-    # Sort the singular values and corresponding vectors in descending order
-    # This matches the standard output format of np.linalg.svd
     sorted_indices = np.argsort(S)[::-1]
     S = S[sorted_indices]
     U = U[:, sorted_indices]

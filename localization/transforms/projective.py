@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
+from utils.inverter import invert_matrix
+
 from localization.transforms.base import TransformationModel
 
 
@@ -65,12 +67,11 @@ class ProjectiveModel(TransformationModel):
             A[2 * i]     = [x, y, 1, 0, 0, 0, -X * x, -X * y, -X]
             A[2 * i + 1] = [0, 0, 0, x, y, 1, -Y * x, -Y * y, -Y]
 
-        from utils.svd import compute_svd_jacobi
-        _, _, Vh = compute_svd_jacobi(A)
+        _, _, Vh = np.linalg.svd(A)
         h = Vh[-1, :]
         H_norm = h.reshape(3, 3)
 
-        H = np.linalg.inv(T_dst) @ H_norm @ T_src
+        H = invert_matrix(T_dst) @ H_norm @ T_src
 
         if np.abs(H[2, 2]) > 1e-10:
             H /= H[2, 2]

@@ -65,7 +65,8 @@ class AffineModel(TransformationModel):
             b[2*i] = x_dst
             b[2*i + 1] = y_dst
         
-        solution_vector = np.linalg.solve(a=A.T @ A, b=A.T @ b)
+        from utils.solver import solve_linear_system
+        solution_vector = solve_linear_system(A=A.T @ A, b=A.T @ b)
         a_00, a_01, tx, a_10, a_11, ty, = solution_vector
 
         transformation_matrix = np.array([[a_00, a_01, tx],
