@@ -24,6 +24,9 @@ The system implements a robust geometric registration pipeline designed for cros
 │   ├── transforms/        # Affine, Similarity, and Projective models
 │   ├── ransac.py          # Robust parameter estimator
 │   └── pipeline.py        # End-to-end localization logic
+├── utils/                 # Custom mathematical utilities
+│   ├── solver.py          # Manual Gaussian elimination solver
+│   └── inverter.py        # Manual matrix inversion0
 ├── evaluation/            # Benchmarking and metrics suite
 ├── report/                # Technical report (LaTeX) and figures
 ├── configs/               # YAML configuration files
