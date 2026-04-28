@@ -26,7 +26,7 @@ The system implements a robust geometric registration pipeline designed for cros
 │   └── pipeline.py        # End-to-end localization logic
 ├── utils/                 # Custom mathematical utilities
 │   ├── solver.py          # Manual Gaussian elimination solver
-│   └── inverter.py        # Manual matrix inversion0
+│   └── inverter.py        # Manual matrix inversion
 ├── evaluation/            # Benchmarking and metrics suite
 ├── report/                # Technical report (LaTeX) and figures
 ├── configs/               # YAML configuration files
@@ -37,7 +37,7 @@ The system implements a robust geometric registration pipeline designed for cros
 
 ### Installation
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -55,8 +55,28 @@ streamlit run app/app_ui/ui.py
 ![UI Showcase](report/figs/app_ui.png)
 
 ### 2. Command Line Interface (Batch Processing)
+The CLI application is designed for automated or batch processing of image pairs.
+
+**Command Template:**
 ```bash
-python -m app.app_cli.cli --map path/to/map.tif --uav path/to/uav.jpg --config configs/default.yaml --output-dir outputs
+python3 -m app.app_cli.cli --map <MAP_PATH> --uav <UAV_PATH> --config <CONFIG_PATH> [OPTIONS]
+```
+
+**Parameters:**
+*   `--map`: **(Required)** Path to the high-resolution reference satellite map (GeoTIFF or standard image).
+*   `--uav`: **(Required)** Path to the UAV camera frame (JPG, PNG, or TIFF).
+*   `--config`: **(Required)** Path to the YAML configuration file defining the model and algorithm parameters.
+*   `--output-dir`: Directory where visualization artifacts and the JSON summary will be saved (Default: `outputs`).
+*   `--log-file`: Optional path to save the execution logs to a file.
+*   `--log-level`: Set the logging verbosity (Choices: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; Default: `INFO`).
+
+**Run on Example Data:**
+```bash
+python3 -m app.app_cli.cli \
+  --map data/examples/satellite_example.tif \
+  --uav data/examples/uav_example_01.png \
+  --config configs/default.yaml \
+  --output-dir outputs/example_run
 ```
 
 ## Benchmarks & Results
