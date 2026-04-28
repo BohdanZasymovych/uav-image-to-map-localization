@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
+from utils.inverter import invert_matrix
+
 from localization.transforms.base import TransformationModel
 
 
@@ -69,7 +71,7 @@ class ProjectiveModel(TransformationModel):
         h = Vh[-1, :]
         H_norm = h.reshape(3, 3)
 
-        H = np.linalg.inv(T_dst) @ H_norm @ T_src
+        H = invert_matrix(T_dst) @ H_norm @ T_src
 
         if np.abs(H[2, 2]) > 1e-10:
             H /= H[2, 2]
