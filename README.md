@@ -25,8 +25,10 @@ The system implements a robust geometric registration pipeline designed for cros
 │   ├── ransac.py          # Robust parameter estimator
 │   └── pipeline.py        # End-to-end localization logic
 ├── utils/                 # Custom mathematical utilities
-│   ├── solver.py          # Manual Gaussian elimination solver
-│   └── inverter.py        # Manual matrix inversion
+│   ├── cho_factor.py      # Cholesky factorization (replacement for scipy.linalg.cho_factor)
+│   ├── cho_solve.py       # Solver using Cholesky factors (replacement for scipy.linalg.cho_solve)
+│   ├── get_smallest_right_singular_vector.py  # Inverse-iteration helper to get smallest right singular vector
+│   └── invert_matrix.py   # Gauss-Jordan matrix inversion utility
 ├── evaluation/            # Benchmarking and metrics suite
 ├── report/                # Technical report (LaTeX) and figures
 ├── configs/               # YAML configuration files
