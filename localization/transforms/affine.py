@@ -3,7 +3,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
-from utils.solver import solve_linear_system
+from utils.cho_factor import cho_factor
+from utils.cho_solve import cho_solve
 
 from localization.transforms.base import TransformationModel
 
@@ -67,7 +68,10 @@ class AffineModel(TransformationModel):
             b[2*i] = x_dst
             b[2*i + 1] = y_dst
         
-        solution_vector = solve_linear_system(A=A.T @ A, b=A.T @ b)
+        # solution_vector = solve_linear_system(A=A.T @ A, b=A.T @ b)
+        c, lower_flag = cho_factor(A.T @ A, lower=True)
+        solution_vector = cho_solve((c, lower_flag), A.T @ b)
+
         a_00, a_01, tx, a_10, a_11, ty, = solution_vector
 
         transformation_matrix = np.array([[a_00, a_01, tx],
