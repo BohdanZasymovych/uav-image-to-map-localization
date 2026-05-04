@@ -74,6 +74,7 @@ class RANSAC:
                 best_inlier_count = n_inliers
                 old_n_iters = n_iters
                 n_iters = min(self.__adaptive_iters(n_inliers, n_total), self.max_iterations)
+                
                 if n_iters < old_n_iters:
                     logger.debug("RANSAC iteration %d: found %d inliers, updated max_iters to %d", 
                                  i, n_inliers, n_iters)
@@ -92,14 +93,19 @@ class RANSAC:
 
     def __adaptive_iters(self, n_inliers: int, n_total: int) -> int:
         w = n_inliers / n_total
+
         if w == 0:
             return self.max_iterations
+        
         p_all_inliers = w ** self.model.min_points
         if p_all_inliers >= 1.0:
             return 1
+        
         denom = np.log(1.0 - p_all_inliers)
         if np.isclose(denom, 0.0):
             return self.max_iterations
+        
         n = int(np.ceil(np.log(1.0 - self.confidence) / denom))
+
         return min(max(n, 1), self.max_iterations)
        
